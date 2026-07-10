@@ -147,8 +147,76 @@
   /* ── End card ── */
   .end-card {
     background: var(--panel); border: 2px solid var(--gold-dim); border-radius: 14px;
-    padding: 34px 46px; text-align: center; max-width: 580px;
+    padding: 30px 42px; text-align: center; max-width: 780px;
     box-shadow: 0 12px 48px rgba(0,0,0,.7);
+  }
+
+  /* ── Memorial board (the fallen, Hunger Games style) ── */
+  #memorial-title {
+    font-family: "Pirata One", Georgia, serif; font-size: 22px; color: var(--parchment);
+    letter-spacing: 3px; margin: 4px 0 2px;
+  }
+  #memorial-sub { font-size: 12px; color: #7d8ea3; font-style: italic; margin-bottom: 12px; }
+  .mem-board {
+    display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px 6px;
+    margin-bottom: 20px;
+  }
+  .mem-board.mem-small { gap: 8px 4px; margin: 14px 0 16px; }
+  .mem-small .mem-ava { width: 42px; height: 42px; font-size: 20px; }
+  .mem-small .mem-name { font-size: 9px; }
+  .mem-small .mem-place { font-size: 12px; bottom: 9px; }
+  .mem-small .mem-skull { font-size: 12px; top: -3px; right: 0; }
+  .mem-tile { position: relative; cursor: pointer; }
+  .mem-ava {
+    position: relative; width: 56px; height: 56px; margin: 0 auto;
+    border-radius: 50%; border: 2px solid #3f5a7a; overflow: hidden;
+    background: #0c1420; display: flex; align-items: center; justify-content: center;
+    font-size: 28px; transition: transform .1s;
+  }
+  .mem-tile:hover .mem-ava { transform: scale(1.12); }
+  .mem-ava img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .mem-name {
+    font-size: 10.5px; color: #9fb0c4; margin-top: 3px; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .mem-tile.dead .mem-ava { border-color: #4a2222; }
+  .mem-tile.dead .mem-ava img { filter: grayscale(1) brightness(.4); }
+  .mem-tile.dead .mem-ava .mem-emoji { filter: grayscale(1); opacity: .35; }
+  .mem-tile.dead .mem-name { color: #5a6878; text-decoration: line-through; }
+  .mem-skull {
+    position: absolute; top: -4px; right: 2px; font-size: 15px;
+    text-shadow: 0 1px 3px #000; z-index: 2;
+  }
+  .mem-place {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    font-family: "Pirata One", Georgia, serif; font-size: 15px; color: #d8e2ee;
+    text-shadow: 0 0 4px #000, 0 0 8px #000; z-index: 2; pointer-events: none;
+  }
+  .mem-tile.winner .mem-ava { border-color: var(--gold); box-shadow: 0 0 12px rgba(232,182,76,.55); }
+  .mem-tile.me .mem-name { color: var(--gold); font-weight: bold; }
+
+  #memorial-tip {
+    position: fixed; z-index: 60; pointer-events: none; display: none;
+    background: rgba(10, 16, 26, .97); border: 1px solid var(--gold-dim); border-radius: 10px;
+    padding: 10px 14px; text-align: left; max-width: 250px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.7); font-size: 13px; color: #c8d4e2;
+  }
+  #memorial-tip .tt-name { font-family: "Pirata One", Georgia, serif; font-size: 18px; color: var(--gold); }
+  #memorial-tip .tt-user { font-size: 11px; color: #7d8ea3; margin-bottom: 6px; }
+  #memorial-tip .tt-status { font-style: italic; margin-bottom: 6px; color: var(--parchment); }
+  #memorial-tip .tt-row { display: flex; justify-content: space-between; gap: 16px; }
+  #memorial-tip .tt-row span:last-child { color: var(--parchment); }
+
+  #prompted-link {
+    display: inline-block; margin-top: 14px; font-size: 13px; color: #7d8ea3;
+    text-decoration: none; border: 1px solid #2e3f56; border-radius: 16px;
+    padding: 4px 14px; letter-spacing: 1px;
+  }
+  #prompted-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+  @media (max-width: 640px) {
+    .mem-board { grid-template-columns: repeat(6, 1fr); }
+    .end-card { padding: 20px 16px; }
   }
   .end-card h2 { font-size: 44px; color: var(--gold); margin-bottom: 4px; }
   .end-card .end-sub { font-style: italic; color: #b8c4d4; margin-bottom: 18px; font-size: 17px; }
@@ -239,10 +307,29 @@
       <div class="stat"><div class="v" id="end-kills">0</div><div class="k">Ships Sunk</div></div>
       <div class="stat"><div class="v" id="end-dmg">0</div><div class="k">Damage</div></div>
     </div>
+    <div id="memorial-title">⚔ THE FALLEN ⚔</div>
+    <div id="memorial-sub">hover a captain for the tale of their voyage</div>
+    <div id="memorial" class="mem-board"></div>
     <div id="end-buttons"></div>
   </div>
 </div>
 
+<!-- Pause / parley -->
+<div id="screen-pause" class="overlay hidden">
+  <div class="end-card">
+    <div class="big-emoji">🏳️</div>
+    <h2>PARLEY</h2>
+    <div class="end-sub">the battle holds its breath · press ESC to resume</div>
+    <div id="memorial-pause" class="mem-board mem-small"></div>
+    <div>
+      <button class="btn" id="btn-resume">▶ Resume</button>
+      <button class="btn ghost" id="btn-port-pause">🏠 Back to Port</button>
+    </div>
+    <a id="prompted-link" href="https://prmpted.com" target="_blank" rel="noopener">⚡ prmpted.com</a>
+  </div>
+</div>
+
+<div id="memorial-tip"></div>
 <button id="mutebtn" title="Toggle sound">🔊</button>
 
 <script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>

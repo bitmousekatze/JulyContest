@@ -29,6 +29,11 @@ No build step. Three.js loads from CDN, so you need an internet connection.
   are cursed. There is always exactly one survivor.
 - **Kill feed & spectate** — watch the community sink each other in real
   time; if you go down, spectate the rest of the battle or restart.
+- **The Fallen** — the end screen shows a Hunger Games-style memorial of
+  all 24 captains with their real Prompted avatars: who survived, who sank,
+  their placement, and (on hover) kills, damage, hull, and who sank them.
+- **ESC to parley** — pauses the battle over a mini roster board, with a
+  link back to [prmpted.com](https://prmpted.com).
 
 ### Controls
 
@@ -39,6 +44,7 @@ No build step. Three.js loads from CDN, so you need an internet connection.
 | `Q` | fire port broadside |
 | `E` | fire starboard broadside |
 | `SPACE` | fire both sides |
+| `ESC` | pause (parley) |
 | drag mouse | look around |
 | scroll | zoom |
 

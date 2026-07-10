@@ -445,6 +445,7 @@ function sinkShipMesh(mesh) {
 const G = {
   mode: "title",       // title | arena
   over: false,
+  paused: false,
   ships: [],           // all ships, dead ones flagged
   balls: [],
   captain: null,
@@ -479,6 +480,7 @@ function makeShip(cap, isPlayer, pos) {
     reload: isPlayer ? 3.2 : 4.8 - 1.7 * smartness(cap.bp),
     halfLen: (hull.len * CELL * 0.88) / 2 + 1.8,
     kills: 0, dmg: 0,
+    place: null, sunkBy: null, deathTime: null,
     fires: 0,                     // deck fires spawned
     ai: isPlayer ? null : { smart: smartness(cap.bp), target: null, retarget: 2 + Math.random() * 6 },
     label: null, labelCv: null,
@@ -493,6 +495,8 @@ function startArena(captain) {
   G.captain = captain;
   G.mode = "arena";
   G.over = false;
+  G.paused = false;
+  document.getElementById("screen-pause").classList.add("hidden");
   G.spectating = false;
   G.winner = null;
   G.time = 0;
@@ -662,6 +666,9 @@ function damageShip(ship, amount, attacker) {
 function killShip(ship, attacker) {
   ship.alive = false;
   ship.hp = 0;
+  ship.place = aliveShips().length + 1;
+  ship.sunkBy = attacker ? attacker.cap : null;
+  ship.deathTime = G.time;
   if (ship.label) { ship.mesh.remove(ship.label); ship.label = null; }
   explosionFX(ship.mesh.position.clone().setY(3), true);
   sinkShipMesh(ship.mesh);
@@ -709,6 +716,7 @@ function checkEnd() {
   if (alive.length > 1 || G.over) return;
   G.over = true;
   G.winner = alive[0] || null;
+  if (G.winner) G.winner.place = 1;
 
   if (G.winner && G.winner.isPlayer) {
     AudioFX.victory();
@@ -753,8 +761,87 @@ function showEndCard({ emoji, title, sub, place, buttons }) {
     b.onclick = fn;
     btns.appendChild(b);
   }
+  renderMemorial(document.getElementById("memorial"));
   document.getElementById("screen-end").classList.remove("hidden");
 }
+
+/* ── Memorial board: the fallen, Hunger Games style ───────────────── */
+const fmtTime = (t) => Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0");
+
+function renderMemorial(board) {
+  const order = [...G.ships].sort((a, b) => {
+    if (a.alive !== b.alive) return a.alive ? -1 : 1;
+    if (a.alive) return b.hp - a.hp;
+    return a.place - b.place;
+  });
+  board.innerHTML = order.map(s => {
+    const i = G.ships.indexOf(s);
+    const cls = ["mem-tile", s.alive ? "" : "dead",
+                 s.place === 1 ? "winner" : "", s.isPlayer ? "me" : ""].join(" ");
+    const ava = s.cap.avatar
+      ? `<span class="mem-emoji">${s.cap.emoji}</span><img src="${esc(s.cap.avatar)}" alt="" onerror="this.remove()">`
+      : `<span class="mem-emoji">${s.cap.emoji}</span>`;
+    const badge = s.place === 1 ? `<span class="mem-skull">👑</span>`
+                : !s.alive      ? `<span class="mem-skull">☠️</span>` : "";
+    const place = !s.alive || s.place === 1 ? `<span class="mem-place">#${s.place}</span>` : "";
+    return `<div class="${cls}" data-i="${i}">
+      <div class="mem-ava">${ava}</div>${badge}${place}
+      <div class="mem-name">${esc(s.cap.name)}${s.isPlayer ? " (YE)" : ""}</div>
+    </div>`;
+  }).join("");
+}
+
+/* Tooltip: hover a tile → that captain's voyage */
+const memTip = document.getElementById("memorial-tip");
+function attachMemorialTip(board) {
+  board.addEventListener("mouseover", (e) => {
+  const tile = e.target.closest(".mem-tile");
+  if (!tile) return;
+  const s = G.ships[+tile.dataset.i];
+  if (!s) return;
+  const status = s.place === 1
+    ? `👑 Last ship afloat — champion!`
+    : s.alive
+      ? `⛵ Still afloat — hull at ${Math.round(100 * s.hp / s.maxHp)}%`
+      : `☠️ Placed #${s.place} — ${s.sunkBy
+          ? "sunk by " + esc(s.sunkBy.name) : "swallowed by the storm"} at ${fmtTime(s.deathTime)}`;
+  memTip.innerHTML = `
+    <div class="tt-name">${s.cap.emoji} Cap'n ${esc(s.cap.name)}</div>
+    <div class="tt-user">@${esc(s.cap.username)} · ${s.cap.bp.toLocaleString()} BP</div>
+    <div class="tt-status">${status}</div>
+    <div class="tt-row"><span>⛵ Hull</span><span>${s.hull.name}</span></div>
+    <div class="tt-row"><span>⚔️ Ships sunk</span><span>${s.kills}</span></div>
+    <div class="tt-row"><span>💥 Damage dealt</span><span>${Math.round(s.dmg)}</span></div>`;
+  memTip.style.display = "block";
+  const r = tile.getBoundingClientRect(), tw = memTip.offsetWidth, th = memTip.offsetHeight;
+  memTip.style.left = clamp(r.left + r.width / 2 - tw / 2, 8, window.innerWidth - tw - 8) + "px";
+  memTip.style.top = (r.top - th - 8 < 8 ? r.bottom + 8 : r.top - th - 8) + "px";
+  });
+  board.addEventListener("mouseleave", () => { memTip.style.display = "none"; });
+}
+attachMemorialTip(document.getElementById("memorial"));
+attachMemorialTip(document.getElementById("memorial-pause"));
+
+/* ── Pause (parley) ───────────────────────────────────────────────── */
+function togglePause() {
+  if (G.mode !== "arena" || G.over) return;
+  if (!document.getElementById("screen-end").classList.contains("hidden")) return;
+  G.paused = !G.paused;
+  document.getElementById("screen-pause").classList.toggle("hidden", !G.paused);
+  memTip.style.display = "none";
+  if (G.paused) {
+    renderMemorial(document.getElementById("memorial-pause"));
+    music.pause();
+  } else if (music.paused) {
+    music.play().catch(() => {});
+  }
+}
+document.getElementById("btn-resume").onclick = togglePause;
+document.getElementById("btn-port-pause").onclick = () => {
+  G.paused = false;
+  document.getElementById("screen-pause").classList.add("hidden");
+  backToPort();
+};
 
 /* ── AI captains ──────────────────────────────────────────────────── */
 function stepAI(ship, dt) {
@@ -808,7 +895,8 @@ window.addEventListener("keydown", (e) => {
   if (e.repeat) return;
   const k = e.key.toLowerCase();
   keys[k] = true;
-  if (G.mode !== "arena" || !G.playerShip || !G.playerShip.alive) return;
+  if (k === "escape") { togglePause(); return; }
+  if (G.mode !== "arena" || G.paused || !G.playerShip || !G.playerShip.alive) return;
   if (k === "q") fireBroadside(G.playerShip, +1);
   if (k === "e") fireBroadside(G.playerShip, -1);
   if (k === " ") {
@@ -1017,6 +1105,10 @@ function animate() {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
 
+  if (G.mode === "arena" && G.paused) {
+    renderer.render(scene, camera);   // frozen tableau under the parley card
+    return;
+  }
   updateOcean(t);
   if (G.mode === "arena") {
     step(dt);
