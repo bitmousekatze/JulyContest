@@ -126,6 +126,31 @@ const AudioFX = (() => {
   };
 })();
 
+/* ── Battle music ─────────────────────────────────────────────────── */
+const MUSIC_VOL = 0.4;
+const music = new Audio("BattleSong.mp3");
+music.loop = true;
+music.volume = MUSIC_VOL;
+
+function startMusic() {
+  music.volume = MUSIC_VOL;
+  music.muted = AudioFX.isMuted();
+  if (music.paused) {
+    music.currentTime = 0;
+    music.play().catch(() => {});   // blocked until a user gesture — fine
+  }
+}
+function fadeOutMusic() {
+  if (music.paused) return;
+  let t = 0;
+  addAnim((dt) => {
+    t += dt;
+    music.volume = Math.max(0, MUSIC_VOL * (1 - t / 1.4));
+    if (t >= 1.4) { music.pause(); music.volume = MUSIC_VOL; return false; }
+    return true;
+  });
+}
+
 /* ── Renderer / scene / lights / sky ──────────────────────────────── */
 const canvas   = document.getElementById("scene");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -499,12 +524,14 @@ function startArena(captain) {
   document.getElementById("pp-ship").textContent =
     "@" + captain.username + " · " + G.playerShip.hull.name;
   showBanner("⚔️ NO QUARTER! Last ship afloat takes the July crown!");
+  startMusic();
 }
 
 function backToPort() {
   G.mode = "title";
   G.over = false;
   resetArenaGroup();
+  fadeOutMusic();
   G.ships = []; G.balls = []; G.playerShip = null;
   document.getElementById("screen-end").classList.add("hidden");
   document.getElementById("hud").classList.remove("active");
@@ -973,6 +1000,7 @@ buildRoster();
 
 document.getElementById("mutebtn").onclick = function () {
   AudioFX.toggle();
+  music.muted = AudioFX.isMuted();
   this.textContent = AudioFX.isMuted() ? "🔇" : "🔊";
 };
 

@@ -49,6 +49,7 @@ No build step. Three.js loads from CDN, so you need an internet connection.
 | `index.html` | Page shell, HUD, and all styling |
 | `game.js` | Three.js scene, simulation, AI, and effects |
 | `roster.js` | The community roster — **edit this** to add/remove captains |
+| `BattleSong.mp3` | Battle music (non-copyrighted) — loops during the arena, 🔊 mutes |
 
 ### Editing the roster
 
