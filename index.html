@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Broadside! — Prompted July Contest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #e8b64c;
+    --gold-dim: #a8853a;
+    --parchment: #e8d9b5;
+    --ink: #1d1408;
+    --sea: #0d2137;
+    --blood: #c0392b;
+    --panel: rgba(16, 24, 38, 0.92);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sea); }
+  body { font-family: "IM Fell English", Georgia, serif; color: var(--parchment); }
+  #scene { position: fixed; inset: 0; display: block; cursor: crosshair; }
+
+  h1, h2, h3, .pirate { font-family: "Pirata One", "IM Fell English", Georgia, serif; letter-spacing: 1px; font-weight: 400; }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 35%, rgba(13,33,55,.55) 0%, rgba(5,10,20,.92) 100%);
+    padding: 24px; overflow-y: auto;
+  }
+  .overlay.hidden { display: none; }
+
+  .btn {
+    font-family: "Pirata One", Georgia, serif; font-size: 22px; letter-spacing: 1.5px;
+    color: var(--ink); background: linear-gradient(180deg, #f0c96a, #c9963b);
+    border: 2px solid #7a5b1e; border-radius: 8px; padding: 10px 30px;
+    cursor: pointer; text-shadow: 0 1px 0 rgba(255,255,255,.35);
+    box-shadow: 0 4px 0 #5d4517, 0 6px 14px rgba(0,0,0,.5);
+    transition: transform .08s, box-shadow .08s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #5d4517; }
+  .btn.ghost {
+    background: transparent; color: var(--gold); border-color: var(--gold-dim);
+    box-shadow: none; font-size: 18px;
+  }
+
+  /* ── Title / captain select ── */
+  #title-art { text-align: center; margin-bottom: 8px; }
+  #title-art h1 {
+    font-size: clamp(52px, 9vw, 96px); color: var(--gold);
+    text-shadow: 0 0 30px rgba(232,182,76,.35), 0 4px 0 #4a3812, 0 8px 24px rgba(0,0,0,.8);
+  }
+  #title-art .sub { font-style: italic; font-size: clamp(15px, 2vw, 20px); color: #b8c4d4; margin-top: 2px; }
+  #title-art .contest-tag {
+    display: inline-block; margin-top: 10px; padding: 4px 18px; border: 1px solid var(--gold-dim);
+    border-radius: 20px; color: var(--gold); font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
+  }
+  #roster-heading { margin: 22px 0 12px; color: var(--parchment); font-size: 26px; }
+  #roster-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px; width: min(1060px, 94vw);
+  }
+  .captain-card {
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
+    padding: 12px 8px 10px; text-align: center; cursor: pointer;
+    transition: transform .1s, border-color .1s, box-shadow .1s;
+  }
+  .captain-card:hover {
+    transform: translateY(-3px); border-color: var(--gold);
+    box-shadow: 0 6px 18px rgba(0,0,0,.6), 0 0 12px rgba(232,182,76,.15);
+  }
+  .captain-card .emoji { font-size: 34px; line-height: 1.1; }
+  .captain-card .cname { font-size: 17px; color: var(--parchment); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .captain-card .cuser { font-size: 12px; color: #7d8ea3; }
+  .captain-card .cbp { font-size: 12px; color: var(--gold); margin-top: 3px; }
+
+  /* ── HUD ── */
+  #hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; display: none; }
+  #hud.active { display: block; }
+  #topbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    padding: 12px 16px; gap: 12px;
+  }
+  .fleet-panel {
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
+    padding: 10px 14px; min-width: 230px; pointer-events: auto;
+  }
+  .fleet-panel .fp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .fleet-panel .fp-emoji { font-size: 24px; }
+  .fleet-panel .fp-name { font-family: "Pirata One", Georgia, serif; font-size: 20px; color: var(--gold); }
+  .fleet-panel .fp-user { font-size: 12px; color: #7d8ea3; }
+  .shiprow { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 12px; color: #9fb0c4; }
+  .shiprow .pips { display: flex; gap: 2px; }
+  .pip { width: 11px; height: 11px; border-radius: 2px; background: #3f9e5f; border: 1px solid rgba(0,0,0,.4); }
+  .pip.hit { background: var(--blood); }
+  .shiprow.sunk { opacity: .45; text-decoration: line-through; }
+
+  #centerbar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; }
+  #battle-progress { font-size: 13px; color: #8fa2b8; letter-spacing: 2px; text-transform: uppercase; }
+  #turn-banner { font-family: "Pirata One", Georgia, serif; font-size: 26px; color: var(--gold); text-shadow: 0 2px 8px #000; margin-top: 2px; }
+
+  #log-banner {
+    position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%);
+    max-width: min(680px, 90vw); text-align: center;
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
+    padding: 8px 22px; font-size: 17px; font-style: italic; color: var(--parchment);
+    transition: opacity .3s; box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  }
+  #log-banner .who { color: var(--gold); font-style: normal; font-family: "Pirata One", Georgia, serif; letter-spacing: 1px; }
+
+  #bottombar {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 10px; pointer-events: auto;
+  }
+  .viewbtn {
+    font-family: "IM Fell English", Georgia, serif; font-size: 14px;
+    background: var(--panel); color: #9fb0c4; border: 1px solid #2e3f56;
+    border-radius: 8px; padding: 7px 14px; cursor: pointer;
+  }
+  .viewbtn:hover { color: var(--gold); border-color: var(--gold-dim); }
+
+  #placement-panel {
+    position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
+    text-align: center; pointer-events: auto;
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 12px;
+    padding: 16px 26px; display: none;
+  }
+  #placement-panel.active { display: block; }
+  #placement-panel h3 { color: var(--gold); font-size: 24px; margin-bottom: 4px; }
+  #placement-panel p { font-size: 14px; color: #9fb0c4; margin-bottom: 12px; }
+  #placement-panel .btn { margin: 0 6px; }
+
+  /* ── Battle end / champion ── */
+  .end-card {
+    background: var(--panel); border: 2px solid var(--gold-dim); border-radius: 14px;
+    padding: 34px 46px; text-align: center; max-width: 560px;
+    box-shadow: 0 12px 48px rgba(0,0,0,.7);
+  }
+  .end-card h2 { font-size: 44px; color: var(--gold); margin-bottom: 4px; }
+  .end-card .end-sub { font-style: italic; color: #b8c4d4; margin-bottom: 18px; font-size: 17px; }
+  .end-card .stats { display: flex; justify-content: center; gap: 26px; margin-bottom: 22px; }
+  .end-card .stat .v { font-family: "Pirata One", Georgia, serif; font-size: 30px; color: var(--parchment); }
+  .end-card .stat .k { font-size: 12px; color: #7d8ea3; text-transform: uppercase; letter-spacing: 2px; }
+  .end-card .btn { margin: 4px 6px; }
+  .end-card .big-emoji { font-size: 56px; margin-bottom: 6px; }
+
+  #mutebtn {
+    position: fixed; top: 12px; right: 12px; z-index: 20;
+    background: var(--panel); border: 1px solid #2e3f56; color: #9fb0c4;
+    border-radius: 8px; font-size: 16px; padding: 6px 10px; cursor: pointer;
+  }
+  #hud.active ~ #mutebtn, #mutebtn { }
+  @media (max-width: 760px) {
+    .fleet-panel { min-width: 150px; padding: 8px; }
+    .shiprow { font-size: 10px; }
+    #turn-banner { font-size: 19px; }
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<!-- Title / captain select -->
+<div id="screen-title" class="overlay">
+  <div id="title-art">
+    <h1>⚓ BROADSIDE! ⚓</h1>
+    <div class="sub">A pirate-age naval war simulator upon the high seas of Prompted</div>
+    <div class="contest-tag">July Games Contest · MMXXVI</div>
+  </div>
+  <div id="roster-heading" class="pirate">Choose yer Captain</div>
+  <div id="roster-grid"></div>
+</div>
+
+<!-- HUD -->
+<div id="hud">
+  <div id="topbar">
+    <div class="fleet-panel" id="panel-player"></div>
+    <div id="centerbar">
+      <div id="battle-progress"></div>
+      <div id="turn-banner"></div>
+    </div>
+    <div class="fleet-panel" id="panel-enemy"></div>
+  </div>
+  <div id="log-banner"><span class="who"></span> <span class="msg">The fog parts…</span></div>
+  <div id="placement-panel">
+    <h3>Position yer Fleet</h3>
+    <p>The wind decides where yer ships lie. Shuffle until fortune favors ye.</p>
+    <button class="btn ghost" id="btn-shuffle">🎲 Shuffle Fleet</button>
+    <button class="btn" id="btn-battle">⚔️ To Battle!</button>
+  </div>
+  <div id="bottombar">
+    <button class="viewbtn" data-view="enemy">🔭 Enemy Waters</button>
+    <button class="viewbtn" data-view="overview">🗺️ Overview</button>
+    <button class="viewbtn" data-view="fleet">⛵ Yer Fleet</button>
+  </div>
+</div>
+
+<!-- Battle end -->
+<div id="screen-end" class="overlay hidden">
+  <div class="end-card">
+    <div class="big-emoji" id="end-emoji">🏴‍☠️</div>
+    <h2 id="end-title">Victory!</h2>
+    <div class="end-sub" id="end-sub"></div>
+    <div class="stats">
+      <div class="stat"><div class="v" id="end-shots">0</div><div class="k">Shots</div></div>
+      <div class="stat"><div class="v" id="end-acc">0%</div><div class="k">Accuracy</div></div>
+      <div class="stat"><div class="v" id="end-defeated">0</div><div class="k">Defeated</div></div>
+    </div>
+    <div id="end-buttons"></div>
+  </div>
+</div>
+
+<button id="mutebtn" title="Toggle sound">🔊</button>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="roster.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
