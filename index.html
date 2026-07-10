@@ -2,6 +2,42 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<script>
+(function(){
+  if (window.prmpted) return;
+  function send(m){ try { window.parent.postMessage(m, '*'); } catch(_){} }
+  function heartbeat(){
+    if (document.visibilityState !== 'visible') return;
+    send({ type: 'prmpted:heartbeat', t: Date.now() });
+  }
+  setInterval(heartbeat, 30000);
+  setTimeout(heartbeat, 2000);
+  var pending = {}, seq = 0;
+  window.addEventListener('message', function(e){
+    var d = e.data; if (!d || d.type !== 'prmpted:score:result') return;
+    var cb = pending[d.rid]; if (cb){ delete pending[d.rid]; cb(d.result || {ok:false}); }
+  });
+  window.prmpted = {
+    unlock: function(id){
+      if (!id || typeof id !== 'string') return;
+      send({ type: 'prmpted:achievement', id: id });
+    },
+    score: function(value, opts){
+      opts = opts || {}; var n = Number(value);
+      if (!isFinite(n)) return Promise.resolve({ ok:false, reason:'invalid_score' });
+      var rid = 'r' + (++seq);
+      send({ type:'prmpted:score', rid:rid, score:n,
+             board: typeof opts.board==='string'?opts.board:'default',
+             lowerIsBetter: !!opts.lowerIsBetter,
+             meta: opts.meta && typeof opts.meta==='object'?opts.meta:{} });
+      return new Promise(function(resolve){
+        pending[rid] = resolve;
+        setTimeout(function(){ if(pending[rid]){ delete pending[rid]; resolve({ok:false,reason:'timeout'}); } }, 8000);
+      });
+    }
+  };
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Broadside Royale — Prompted July Contest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -74,7 +110,8 @@
   }
   .captain-card .emoji { font-size: 34px; line-height: 1.1; }
   .captain-card .cname { font-size: 17px; color: var(--parchment); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .captain-card .cuser { font-size: 12px; color: #7d8ea3; }
+  .captain-card .cuser { display: block; font-size: 12px; color: #7d8ea3; text-decoration: none; }
+  .captain-card .cuser:hover { color: var(--gold); text-decoration: underline; }
   .captain-card .cbp { font-size: 12px; color: var(--gold); margin-top: 3px; }
   .captain-card .chull { font-size: 11px; color: #6d94b8; }
 
@@ -137,6 +174,20 @@
   .gun.ready .gfill { background: var(--gold); }
   .gun.ready .glabel { color: var(--gold); }
 
+  #ach-toast {
+    position: fixed; top: 84px; left: 50%; transform: translate(-50%, -16px);
+    z-index: 30; pointer-events: none; opacity: 0;
+    background: linear-gradient(180deg, rgba(30,24,10,.97), rgba(20,16,8,.97));
+    border: 1px solid var(--gold); border-radius: 10px; padding: 9px 24px;
+    font-size: 15px; color: var(--parchment); text-align: center;
+    box-shadow: 0 6px 24px rgba(0,0,0,.7), 0 0 18px rgba(232,182,76,.25);
+    transition: opacity .3s, transform .3s;
+  }
+  #ach-toast.show { opacity: 1; transform: translate(-50%, 0); }
+  #ach-toast b { font-family: "Pirata One", Georgia, serif; color: var(--gold); letter-spacing: 2px; font-size: 17px; }
+
+  #end-rank { font-size: 14px; color: var(--gold); margin: -8px 0 14px; min-height: 18px; font-style: italic; }
+
   #controls-hint {
     position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
     font-size: 13px; color: #7d8ea3; letter-spacing: 1px; white-space: nowrap;
@@ -166,7 +217,7 @@
   .mem-small .mem-name { font-size: 9px; }
   .mem-small .mem-place { font-size: 12px; bottom: 9px; }
   .mem-small .mem-skull { font-size: 12px; top: -3px; right: 0; }
-  .mem-tile { position: relative; cursor: pointer; }
+  .mem-tile { position: relative; cursor: pointer; display: block; text-decoration: none; color: inherit; }
   .mem-ava {
     position: relative; width: 56px; height: 56px; margin: 0 auto;
     border-radius: 50%; border: 2px solid #3f5a7a; overflow: hidden;
@@ -306,9 +357,11 @@
       <div class="stat"><div class="v" id="end-place">#1</div><div class="k">Placement</div></div>
       <div class="stat"><div class="v" id="end-kills">0</div><div class="k">Ships Sunk</div></div>
       <div class="stat"><div class="v" id="end-dmg">0</div><div class="k">Damage</div></div>
+      <div class="stat"><div class="v" id="end-score">0</div><div class="k">Score</div></div>
     </div>
+    <div id="end-rank"></div>
     <div id="memorial-title">⚔ THE FALLEN ⚔</div>
-    <div id="memorial-sub">hover a captain for the tale of their voyage</div>
+    <div id="memorial-sub">hover a captain for their tale · click to visit their prmpted profile</div>
     <div id="memorial" class="mem-board"></div>
     <div id="end-buttons"></div>
   </div>
@@ -329,6 +382,7 @@
   </div>
 </div>
 
+<div id="ach-toast"></div>
 <div id="memorial-tip"></div>
 <button id="mutebtn" title="Toggle sound">🔊</button>
 

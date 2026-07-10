@@ -30,7 +30,32 @@ live cannon fire, a closing storm, one crown. Last ship afloat wins.
   all 24 captains with their real Prompted avatars: who survived, who sank,
   their placement, and (on hover) kills, damage, hull, and who sank them.
 - **ESC to parley** — pauses the battle over a mini roster board, with a
-  link back to [prmpted.com](https://prmpted.com).
+  link back to [prmpted.com](https://prmpted.com). Click any captain on a
+  roster board to visit their real prmpted profile.
+- **prmpted Games integration** — the prmpted SDK is wired in: **15
+  achievements** (+15 BP each on the platform) and a global **high-score
+  leaderboard**. Score = kills ×150 + damage dealt + placement bonus +
+  seconds survived, submitted at the end of every run.
+
+### Achievements
+
+| ID | How |
+|---|---|
+| `first_blood` | Sink yer first ship |
+| `gunslinger` | 3 ships sunk in one battle |
+| `fleet_admiral` | 5 ships sunk in one battle |
+| `deadeye` | Killing volley from beyond 55m |
+| `underdog_upset` | Sink a Man o' War from a Brigantine |
+| `broadside_maestro` | Every ball of one volley hits the same ship |
+| `last_ship_afloat` | Win a royale |
+| `close_shave` | Win with hull under 10% |
+| `pacifist_podium` | Place top 5 without sinking anyone |
+| `davy_jones_locker` | Get sunk (it happens to the best) |
+| `kraken_bait` | Get swallowed by the storm |
+| `storm_chaser` | Survive 8+ seconds inside the storm |
+| `boarding_party` | Bump hulls with another ship |
+| `sea_dog` | Fight 10 battles |
+| `spyglass` | Spectate a battle to its bitter end |
 
 | The Fallen | Parley (pause) |
 |---|---|

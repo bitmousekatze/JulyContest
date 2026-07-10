@@ -25,6 +25,76 @@ function esc(s) {
   }[c]));
 }
 
+/* ── prmpted achievements & leaderboard ───────────────────────────── */
+const ACH = {
+  first_blood:       { name: "FIRST BLOOD",        desc: "sink yer first ship" },
+  gunslinger:        { name: "GUNSLINGER",         desc: "3 ships sunk in one battle" },
+  fleet_admiral:     { name: "FLEET ADMIRAL",      desc: "5 ships sunk in one battle" },
+  deadeye:           { name: "DEADEYE",            desc: "a killing volley from beyond 55m" },
+  underdog_upset:    { name: "UNDERDOG UPSET",     desc: "yer wee Brigantine sank a Man o' War" },
+  broadside_maestro: { name: "BROADSIDE MAESTRO",  desc: "every ball of one volley struck home" },
+  last_ship_afloat:  { name: "LAST SHIP AFLOAT",   desc: "win a royale" },
+  close_shave:       { name: "CLOSE SHAVE",        desc: "win with yer hull under 10%" },
+  pacifist_podium:   { name: "PACIFIST'S PODIUM",  desc: "top 5 without sinking a soul" },
+  davy_jones_locker: { name: "DAVY JONES' LOCKER", desc: "every pirate sinks eventually" },
+  kraken_bait:       { name: "KRAKEN BAIT",        desc: "swallowed whole by the storm" },
+  storm_chaser:      { name: "STORM CHASER",       desc: "8 seconds in the storm — and lived" },
+  boarding_party:    { name: "BOARDING PARTY",     desc: "bump hulls with another ship" },
+  sea_dog:           { name: "SEA DOG",            desc: "fight 10 battles" },
+  spyglass:          { name: "SPYGLASS",           desc: "spectate a battle to its bitter end" },
+};
+let achSeen = new Set();
+try { achSeen = new Set(JSON.parse(localStorage.getItem("br_ach") || "[]")); } catch (_) {}
+function unlockAch(id) {
+  if (achSeen.has(id)) return;
+  achSeen.add(id);
+  try { localStorage.setItem("br_ach", JSON.stringify([...achSeen])); } catch (_) {}
+  try { if (window.prmpted && window.prmpted.unlock) window.prmpted.unlock(id); } catch (_) {}
+  achToast(id);
+}
+const achQueue = [];
+let achShowing = false;
+function achToast(id) {
+  achQueue.push(id);
+  if (!achShowing) nextAchToast();
+}
+function nextAchToast() {
+  const id = achQueue.shift();
+  if (!id) { achShowing = false; return; }
+  achShowing = true;
+  const a = ACH[id] || { name: id, desc: "" };
+  const el = document.getElementById("ach-toast");
+  el.innerHTML = `🏆 <b>${a.name}</b> — ${a.desc} <span style="color:#7d8ea3">(+15 BP)</span>`;
+  el.classList.add("show");
+  AudioFX.kill();
+  setTimeout(() => {
+    el.classList.remove("show");
+    setTimeout(nextAchToast, 400);
+  }, 2800);
+}
+
+/* Score: kills weigh heaviest, then damage, placement, and survival */
+function runScore(ship, place) {
+  return Math.round(ship.kills * 150 + ship.dmg + (25 - place) * 40 + Math.min(G.time, 600));
+}
+function submitScore(place) {
+  if (G.scoreSubmitted) return;
+  G.scoreSubmitted = true;
+  const s = runScore(G.playerShip, place);
+  G.playerScore = s;
+  try {
+    if (window.prmpted && window.prmpted.score) {
+      window.prmpted.score(s, { meta: { captain: G.captain.username, place, kills: G.playerShip.kills } })
+        .then((res) => {
+          if (res && res.ok && res.improved) {
+            const el = document.getElementById("end-rank");
+            if (el) el.textContent = `🏅 New best! Rank #${res.rank} o' ${res.total} pirates`;
+          }
+        });
+    }
+  } catch (_) {}
+}
+
 /* ── Combat tuning ────────────────────────────────────────────────── */
 const BALL_G   = 22;     // cannonball gravity
 const BALL_VY  = 14;     // launch climb speed → ~1.27s flight
@@ -529,6 +599,14 @@ function startArena(captain) {
     "@" + captain.username + " · " + G.playerShip.hull.name;
   showBanner("⚔️ NO QUARTER! Last ship afloat takes the July crown!");
   startMusic();
+
+  G.scoreSubmitted = false;
+  document.getElementById("end-rank").textContent = "";
+  try {
+    const m = +(localStorage.getItem("br_matches") || 0) + 1;
+    localStorage.setItem("br_matches", String(m));
+    if (m >= 10) unlockAch("sea_dog");
+  } catch (_) {}
 }
 
 function backToPort() {
@@ -630,6 +708,7 @@ function fireBroadside(ship, side) {
   const sideDir = dirFromAngle(gunAngle);
   const L = ship.hull.len * CELL * 0.88;
   const nGuns = ship.hull.guns;
+  const vstat = ship.isPlayer ? { n: nGuns, hits: {} } : null;  // broadside_maestro tracking
   for (let i = 0; i < nGuns; i++) {
     const off = (i / Math.max(1, nGuns - 1) - 0.5) * L * 0.6;
     const p = ship.mesh.position.clone()
@@ -642,7 +721,7 @@ function fireBroadside(ship, side) {
     const mesh = new THREE.Mesh(ballGeo, ballMat);
     mesh.position.copy(p);
     arenaGroup.add(mesh);
-    G.balls.push({ p, v, mesh, owner: ship, life: 0 });
+    G.balls.push({ p, v, mesh, owner: ship, life: 0, vstat });
   }
   const flashPos = ship.mesh.position.clone().add(sideDir.clone().multiplyScalar(3)).setY(3);
   particleBurst(flashPos, 0xffc060, 8, 6, 8);
@@ -680,9 +759,15 @@ function killShip(ship, attacker) {
     if (attacker.isPlayer) {
       AudioFX.kill();
       showBanner(`☠️ Ye sent ${ship.cap.name} to the depths! (${attacker.kills} sunk)`);
+      unlockAch("first_blood");
+      if (attacker.kills >= 3) unlockAch("gunslinger");
+      if (attacker.kills >= 5) unlockAch("fleet_admiral");
+      if (attacker.mesh.position.distanceTo(ship.mesh.position) > 55) unlockAch("deadeye");
+      if (attacker.hull.len === 3 && ship.hull.len === 5) unlockAch("underdog_upset");
     }
   } else {
     addFeed(`🌀 the storm swallowed <span class="d">${dName}</span>`);
+    if (ship.isPlayer) unlockAch("kraken_bait");
   }
   if (ship.isPlayer) playerDied(attacker);
   checkEnd();
@@ -693,6 +778,9 @@ function playerDied(attacker) {
   AudioFX.defeat();
   const place = aliveShips().length + 1;
   G.playerPlace = place;
+  unlockAch("davy_jones_locker");
+  if (place <= 5 && G.playerShip.kills === 0) unlockAch("pacifist_podium");
+  submitScore(place);
   showEndCard({
     emoji: "☠️",
     title: "Davy Jones' Locker",
@@ -720,6 +808,10 @@ function checkEnd() {
 
   if (G.winner && G.winner.isPlayer) {
     AudioFX.victory();
+    unlockAch("last_ship_afloat");
+    if (G.winner.hp / G.winner.maxHp < 0.10) unlockAch("close_shave");
+    if (G.winner.kills === 0) unlockAch("pacifist_podium");
+    submitScore(1);
     showEndCard({
       emoji: "🏆",
       title: "LAST SHIP AFLOAT!",
@@ -731,6 +823,7 @@ function checkEnd() {
       ],
     });
   } else {
+    if (G.spectating) unlockAch("spyglass");
     const w = G.winner ? `${G.winner.cap.emoji} Cap'n ${G.winner.cap.name}` : "No one";
     showEndCard({
       emoji: "🏴‍☠️",
@@ -752,6 +845,7 @@ function showEndCard({ emoji, title, sub, place, buttons }) {
   document.getElementById("end-place").textContent = "#" + place;
   document.getElementById("end-kills").textContent = G.playerShip ? G.playerShip.kills : 0;
   document.getElementById("end-dmg").textContent = G.playerShip ? Math.round(G.playerShip.dmg) : 0;
+  document.getElementById("end-score").textContent = (G.playerScore || 0).toLocaleString();
   const btns = document.getElementById("end-buttons");
   btns.innerHTML = "";
   for (const [label, fn, ghost] of buttons) {
@@ -784,10 +878,11 @@ function renderMemorial(board) {
     const badge = s.place === 1 ? `<span class="mem-skull">👑</span>`
                 : !s.alive      ? `<span class="mem-skull">☠️</span>` : "";
     const place = !s.alive || s.place === 1 ? `<span class="mem-place">#${s.place}</span>` : "";
-    return `<div class="${cls}" data-i="${i}">
+    return `<a class="${cls}" data-i="${i}" target="_blank" rel="noopener"
+      href="https://prmpted.com/${encodeURIComponent(s.cap.username)}">
       <div class="mem-ava">${ava}</div>${badge}${place}
       <div class="mem-name">${esc(s.cap.name)}${s.isPlayer ? " (YE)" : ""}</div>
-    </div>`;
+    </a>`;
   }).join("");
 }
 
@@ -947,8 +1042,13 @@ function step(dt) {
 
     // Storm & maelstrom attrition
     const dc = Math.hypot(ship.mesh.position.x, ship.mesh.position.z);
-    if (dc > G.stormR) damageShip(ship, STORM.damage * dt, null);
-    else if (G.stormR <= STORM.minR) damageShip(ship, STORM.attrition * dt, null);
+    if (dc > G.stormR) {
+      damageShip(ship, STORM.damage * dt, null);
+      if (ship.isPlayer) ship.stormT = (ship.stormT || 0) + dt;
+    } else {
+      if (ship.isPlayer && ship.alive && (ship.stormT || 0) >= 8) unlockAch("storm_chaser");
+      if (G.stormR <= STORM.minR) damageShip(ship, STORM.attrition * dt, null);
+    }
   }
 
   // Soft collisions: push overlapping hulls apart
@@ -963,6 +1063,7 @@ function step(dt) {
         _to.normalize().multiplyScalar((minD - d) * 0.5);
         b.mesh.position.add(_to);
         a.mesh.position.sub(_to);
+        if (a.isPlayer || b.isPlayer) unlockAch("boarding_party");
       }
     }
   }
@@ -988,6 +1089,11 @@ function step(dt) {
         if (Math.abs(lon) < ship.halfLen && Math.abs(lat) < 3.3) {
           explosionFX(ball.p.clone(), false);
           damageShip(ship, 3 + Math.random() * 3, ball.owner);
+          if (ball.vstat) {
+            const k = G.ships.indexOf(ship);
+            ball.vstat.hits[k] = (ball.vstat.hits[k] || 0) + 1;
+            if (ball.vstat.hits[k] >= ball.vstat.n) unlockAch("broadside_maestro");
+          }
           dead = true;
           break;
         }
@@ -1077,7 +1183,9 @@ function buildRoster() {
     card.innerHTML = `
       <div class="emoji">${cap.emoji}</div>
       <div class="cname">${esc(cap.name)}</div>
-      <div class="cuser">@${esc(cap.username)}</div>
+      <a class="cuser" href="https://prmpted.com/${encodeURIComponent(cap.username)}"
+         target="_blank" rel="noopener" onclick="event.stopPropagation()"
+         title="visit @${esc(cap.username)} on prmpted">@${esc(cap.username)}</a>
       <div class="cbp">⚜ ${cap.bp.toLocaleString()} BP</div>
       <div class="chull">⛵ ${hullFor(cap).name}</div>`;
     card.onclick = () => startArena(cap);
