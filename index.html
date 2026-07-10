@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Broadside! — Prompted July Contest</title>
+<title>Broadside Royale — Prompted July Contest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Pirata+One&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <style>
@@ -19,7 +19,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 100%; height: 100%; overflow: hidden; background: var(--sea); }
   body { font-family: "IM Fell English", Georgia, serif; color: var(--parchment); }
-  #scene { position: fixed; inset: 0; display: block; cursor: crosshair; }
+  #scene { position: fixed; inset: 0; display: block; }
 
   h1, h2, h3, .pirate { font-family: "Pirata One", "IM Fell English", Georgia, serif; letter-spacing: 1px; font-weight: 400; }
 
@@ -49,7 +49,7 @@
   /* ── Title / captain select ── */
   #title-art { text-align: center; margin-bottom: 8px; }
   #title-art h1 {
-    font-size: clamp(52px, 9vw, 96px); color: var(--gold);
+    font-size: clamp(46px, 8vw, 88px); color: var(--gold);
     text-shadow: 0 0 30px rgba(232,182,76,.35), 0 4px 0 #4a3812, 0 8px 24px rgba(0,0,0,.8);
   }
   #title-art .sub { font-style: italic; font-size: clamp(15px, 2vw, 20px); color: #b8c4d4; margin-top: 2px; }
@@ -57,7 +57,8 @@
     display: inline-block; margin-top: 10px; padding: 4px 18px; border: 1px solid var(--gold-dim);
     border-radius: 20px; color: var(--gold); font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
   }
-  #roster-heading { margin: 22px 0 12px; color: var(--parchment); font-size: 26px; }
+  #roster-heading { margin: 20px 0 4px; color: var(--parchment); font-size: 26px; }
+  #roster-sub { font-size: 14px; color: #8fa2b8; font-style: italic; margin-bottom: 12px; }
   #roster-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 10px; width: min(1060px, 94vw);
@@ -75,68 +76,78 @@
   .captain-card .cname { font-size: 17px; color: var(--parchment); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .captain-card .cuser { font-size: 12px; color: #7d8ea3; }
   .captain-card .cbp { font-size: 12px; color: var(--gold); margin-top: 3px; }
+  .captain-card .chull { font-size: 11px; color: #6d94b8; }
 
   /* ── HUD ── */
   #hud { position: fixed; inset: 0; z-index: 5; pointer-events: none; display: none; }
   #hud.active { display: block; }
-  #topbar {
-    position: absolute; top: 0; left: 0; right: 0;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    padding: 12px 16px; gap: 12px;
-  }
-  .fleet-panel {
+
+  #player-panel {
+    position: absolute; top: 12px; left: 14px;
     background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
-    padding: 10px 14px; min-width: 230px; pointer-events: auto;
+    padding: 10px 14px; min-width: 240px;
   }
-  .fleet-panel .fp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-  .fleet-panel .fp-emoji { font-size: 24px; }
-  .fleet-panel .fp-name { font-family: "Pirata One", Georgia, serif; font-size: 20px; color: var(--gold); }
-  .fleet-panel .fp-user { font-size: 12px; color: #7d8ea3; }
-  .shiprow { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 12px; color: #9fb0c4; }
-  .shiprow .pips { display: flex; gap: 2px; }
-  .pip { width: 11px; height: 11px; border-radius: 2px; background: #3f9e5f; border: 1px solid rgba(0,0,0,.4); }
-  .pip.hit { background: var(--blood); }
-  .shiprow.sunk { opacity: .45; text-decoration: line-through; }
+  #player-panel .fp-head { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; }
+  #player-panel .fp-emoji { font-size: 26px; }
+  #player-panel .fp-name { font-family: "Pirata One", Georgia, serif; font-size: 20px; color: var(--gold); }
+  #player-panel .fp-user { font-size: 12px; color: #7d8ea3; }
+  .hpbar { height: 14px; background: #241418; border: 1px solid #4a2a2a; border-radius: 7px; overflow: hidden; }
+  .hpbar .fill { height: 100%; width: 100%; background: linear-gradient(90deg, #3f9e5f, #7fce6f); transition: width .25s; }
+  .hpbar .fill.low { background: linear-gradient(90deg, #c0392b, #e8734c); }
+  #player-stats { display: flex; gap: 14px; margin-top: 7px; font-size: 13px; color: #9fb0c4; }
+  #player-stats b { color: var(--gold); font-family: "Pirata One", Georgia, serif; font-size: 16px; }
 
   #centerbar { position: absolute; top: 14px; left: 50%; transform: translateX(-50%); text-align: center; }
-  #battle-progress { font-size: 13px; color: #8fa2b8; letter-spacing: 2px; text-transform: uppercase; }
-  #turn-banner { font-family: "Pirata One", Georgia, serif; font-size: 26px; color: var(--gold); text-shadow: 0 2px 8px #000; margin-top: 2px; }
+  #storm-text { font-size: 13px; color: #b88fd9; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 1px 4px #000; }
+  #alive-banner { font-family: "Pirata One", Georgia, serif; font-size: 28px; color: var(--gold); text-shadow: 0 2px 8px #000; }
+
+  #killfeed {
+    position: absolute; top: 12px; right: 14px; width: 285px;
+    display: flex; flex-direction: column; gap: 5px; align-items: flex-end;
+  }
+  .kf-entry {
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 8px;
+    padding: 5px 12px; font-size: 13.5px; color: #c8d4e2;
+    animation: kfin .25s ease-out; max-width: 100%;
+  }
+  .kf-entry .k { color: var(--gold); }
+  .kf-entry .d { color: #8898aa; text-decoration: line-through; }
+  .kf-entry.fade { opacity: 0; transition: opacity 1s; }
+  @keyframes kfin { from { transform: translateX(30px); opacity: 0; } }
 
   #log-banner {
-    position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%);
+    position: absolute; bottom: 118px; left: 50%; transform: translateX(-50%);
     max-width: min(680px, 90vw); text-align: center;
     background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
-    padding: 8px 22px; font-size: 17px; font-style: italic; color: var(--parchment);
-    transition: opacity .3s; box-shadow: 0 4px 16px rgba(0,0,0,.5);
+    padding: 7px 22px; font-size: 17px; font-style: italic; color: var(--parchment);
+    transition: opacity .5s; box-shadow: 0 4px 16px rgba(0,0,0,.5); opacity: 0;
   }
-  #log-banner .who { color: var(--gold); font-style: normal; font-family: "Pirata One", Georgia, serif; letter-spacing: 1px; }
 
-  #bottombar {
+  #gunbar {
+    position: absolute; bottom: 46px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 14px; align-items: center;
+  }
+  .gun {
+    background: var(--panel); border: 1px solid #2e3f56; border-radius: 10px;
+    padding: 7px 16px; text-align: center; min-width: 130px;
+  }
+  .gun .glabel { font-family: "Pirata One", Georgia, serif; font-size: 15px; color: #9fb0c4; letter-spacing: 2px; }
+  .gun .gbar { height: 8px; margin-top: 4px; background: #1a222f; border-radius: 4px; overflow: hidden; }
+  .gun .gfill { height: 100%; width: 100%; background: #5f8ec4; }
+  .gun.ready .gfill { background: var(--gold); }
+  .gun.ready .glabel { color: var(--gold); }
+
+  #controls-hint {
     position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-    display: flex; gap: 10px; pointer-events: auto;
+    font-size: 13px; color: #7d8ea3; letter-spacing: 1px; white-space: nowrap;
+    text-shadow: 0 1px 4px #000;
   }
-  .viewbtn {
-    font-family: "IM Fell English", Georgia, serif; font-size: 14px;
-    background: var(--panel); color: #9fb0c4; border: 1px solid #2e3f56;
-    border-radius: 8px; padding: 7px 14px; cursor: pointer;
-  }
-  .viewbtn:hover { color: var(--gold); border-color: var(--gold-dim); }
+  #controls-hint b { color: #b8c4d4; }
 
-  #placement-panel {
-    position: absolute; bottom: 60px; left: 50%; transform: translateX(-50%);
-    text-align: center; pointer-events: auto;
-    background: var(--panel); border: 1px solid #2e3f56; border-radius: 12px;
-    padding: 16px 26px; display: none;
-  }
-  #placement-panel.active { display: block; }
-  #placement-panel h3 { color: var(--gold); font-size: 24px; margin-bottom: 4px; }
-  #placement-panel p { font-size: 14px; color: #9fb0c4; margin-bottom: 12px; }
-  #placement-panel .btn { margin: 0 6px; }
-
-  /* ── Battle end / champion ── */
+  /* ── End card ── */
   .end-card {
     background: var(--panel); border: 2px solid var(--gold-dim); border-radius: 14px;
-    padding: 34px 46px; text-align: center; max-width: 560px;
+    padding: 34px 46px; text-align: center; max-width: 580px;
     box-shadow: 0 12px 48px rgba(0,0,0,.7);
   }
   .end-card h2 { font-size: 44px; color: var(--gold); margin-bottom: 4px; }
@@ -148,15 +159,18 @@
   .end-card .big-emoji { font-size: 56px; margin-bottom: 6px; }
 
   #mutebtn {
-    position: fixed; top: 12px; right: 12px; z-index: 20;
+    position: fixed; top: 12px; right: 306px; z-index: 20;
     background: var(--panel); border: 1px solid #2e3f56; color: #9fb0c4;
     border-radius: 8px; font-size: 16px; padding: 6px 10px; cursor: pointer;
   }
-  #hud.active ~ #mutebtn, #mutebtn { }
-  @media (max-width: 760px) {
-    .fleet-panel { min-width: 150px; padding: 8px; }
-    .shiprow { font-size: 10px; }
-    #turn-banner { font-size: 19px; }
+  body:not(.in-arena) #mutebtn { right: 12px; }
+
+  @media (max-width: 820px) {
+    #player-panel { min-width: 170px; padding: 8px; }
+    #killfeed { width: 200px; }
+    .kf-entry { font-size: 11px; }
+    #alive-banner { font-size: 20px; }
+    #controls-hint { font-size: 10px; }
   }
 </style>
 </head>
@@ -166,48 +180,64 @@
 <!-- Title / captain select -->
 <div id="screen-title" class="overlay">
   <div id="title-art">
-    <h1>⚓ BROADSIDE! ⚓</h1>
-    <div class="sub">A pirate-age naval war simulator upon the high seas of Prompted</div>
-    <div class="contest-tag">July Games Contest · MMXXVI</div>
+    <h1>⚓ BROADSIDE ROYALE ⚓</h1>
+    <div class="sub">A pirate-age battle arena upon the high seas of Prompted</div>
+    <div class="contest-tag">July Games Contest · 24 sail in · 1 sails out</div>
   </div>
   <div id="roster-heading" class="pirate">Choose yer Captain</div>
+  <div id="roster-sub">Every other captain takes the sea against ye. Builder Points decide their hull — and their aim.</div>
   <div id="roster-grid"></div>
 </div>
 
 <!-- HUD -->
 <div id="hud">
-  <div id="topbar">
-    <div class="fleet-panel" id="panel-player"></div>
-    <div id="centerbar">
-      <div id="battle-progress"></div>
-      <div id="turn-banner"></div>
+  <div id="player-panel">
+    <div class="fp-head">
+      <span class="fp-emoji" id="pp-emoji">🏴‍☠️</span>
+      <span><div class="fp-name" id="pp-name">—</div>
+      <div class="fp-user" id="pp-ship">—</div></span>
     </div>
-    <div class="fleet-panel" id="panel-enemy"></div>
+    <div class="hpbar"><div class="fill" id="hp-fill"></div></div>
+    <div id="player-stats">
+      <span>⚔️ Kills <b id="stat-kills">0</b></span>
+      <span>💥 Damage <b id="stat-dmg">0</b></span>
+    </div>
   </div>
-  <div id="log-banner"><span class="who"></span> <span class="msg">The fog parts…</span></div>
-  <div id="placement-panel">
-    <h3>Position yer Fleet</h3>
-    <p>The wind decides where yer ships lie. Shuffle until fortune favors ye.</p>
-    <button class="btn ghost" id="btn-shuffle">🎲 Shuffle Fleet</button>
-    <button class="btn" id="btn-battle">⚔️ To Battle!</button>
+
+  <div id="centerbar">
+    <div id="alive-banner"><span id="alive-count">24</span> ⛵ afloat</div>
+    <div id="storm-text">calm seas</div>
   </div>
-  <div id="bottombar">
-    <button class="viewbtn" data-view="enemy">🔭 Enemy Waters</button>
-    <button class="viewbtn" data-view="overview">🗺️ Overview</button>
-    <button class="viewbtn" data-view="fleet">⛵ Yer Fleet</button>
+
+  <div id="killfeed"></div>
+
+  <div id="log-banner"><span class="msg"></span></div>
+
+  <div id="gunbar">
+    <div class="gun" id="gun-port">
+      <div class="glabel">◀ PORT GUNS [Q]</div>
+      <div class="gbar"><div class="gfill" id="gf-port"></div></div>
+    </div>
+    <div class="gun" id="gun-star">
+      <div class="glabel">STARBOARD GUNS [E] ▶</div>
+      <div class="gbar"><div class="gfill" id="gf-star"></div></div>
+    </div>
+  </div>
+  <div id="controls-hint">
+    <b>W/S</b> sails · <b>A/D</b> rudder · <b>Q/E</b> broadsides · <b>SPACE</b> fire both · <b>drag</b> look · <b>scroll</b> zoom
   </div>
 </div>
 
-<!-- Battle end -->
+<!-- End card -->
 <div id="screen-end" class="overlay hidden">
   <div class="end-card">
     <div class="big-emoji" id="end-emoji">🏴‍☠️</div>
     <h2 id="end-title">Victory!</h2>
     <div class="end-sub" id="end-sub"></div>
     <div class="stats">
-      <div class="stat"><div class="v" id="end-shots">0</div><div class="k">Shots</div></div>
-      <div class="stat"><div class="v" id="end-acc">0%</div><div class="k">Accuracy</div></div>
-      <div class="stat"><div class="v" id="end-defeated">0</div><div class="k">Defeated</div></div>
+      <div class="stat"><div class="v" id="end-place">#1</div><div class="k">Placement</div></div>
+      <div class="stat"><div class="v" id="end-kills">0</div><div class="k">Ships Sunk</div></div>
+      <div class="stat"><div class="v" id="end-dmg">0</div><div class="k">Damage</div></div>
     </div>
     <div id="end-buttons"></div>
   </div>
