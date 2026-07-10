@@ -1,23 +1,20 @@
-# ⚓ JulyContest — Prompted July Games Contest
+# ⚓ BROADSIDE ROYALE
 
-Contest rosters and games for July 2026.
+**A 3D pirate battle royale starring the Prompted community.**
+Built for the [Prompted](https://prmpted.com) July 2026 Games Contest.
 
-## 🏴‍☠️ BROADSIDE ROYALE — 3D Pirate Battle Arena
+▶️ **[PLAY IT IN YER BROWSER](https://bitmousekatze.github.io/JulyContest/)** — no install, no build, just wind and gunpowder.
 
-A pirate-age battle royale in full 3D. Pick a community member as your
-captain, then sail into an open ocean arena against **every other captain
-in the Prompted community** — 24 ships, live cannon fire, a closing storm,
-and one crown. Last ship afloat wins.
+![Mid-battle brawl](screenshots/battle.png)
 
-### Play
+Pick a real community member as your captain, then sail into an open ocean
+arena against **all 23 other captains from the Prompted leaderboard** —
+live cannon fire, a closing storm, one crown. Last ship afloat wins.
 
-Just open `index.html` in a browser (or serve the folder and visit it).
-No build step. Three.js loads from CDN, so you need an internet connection.
-
-### How it works
+## How it works
 
 - **Choose yer Captain** — the roster is the real Prompted leaderboard
-  (top 24 by Builder Points, pulled 2026-07-10).
+  (top 24 by Builder Points, pulled 2026-07-10), real avatars included.
 - **Hulls by Builder Points** — top 8 sail a Man o' War (5 guns/side, tanky,
   slow), middle 8 a Galleon, the rest a nimble Brigantine. Higher BP also
   means faster reloads and truer aim.
@@ -35,7 +32,11 @@ No build step. Three.js loads from CDN, so you need an internet connection.
 - **ESC to parley** — pauses the battle over a mini roster board, with a
   link back to [prmpted.com](https://prmpted.com).
 
-### Controls
+| The Fallen | Parley (pause) |
+|---|---|
+| ![The Fallen memorial](screenshots/the-fallen.png) | ![Parley pause screen](screenshots/parley.png) |
+
+## Controls
 
 | Input | Action |
 |---|---|
@@ -48,7 +49,12 @@ No build step. Three.js loads from CDN, so you need an internet connection.
 | drag mouse | look around |
 | scroll | zoom |
 
-### Files
+## Run it locally
+
+Clone and open `index.html` in a browser — that's it. No build step.
+Three.js loads from CDN, so you need an internet connection.
+
+## Files
 
 | File | What |
 |---|---|
@@ -57,18 +63,25 @@ No build step. Three.js loads from CDN, so you need an internet connection.
 | `roster.js` | The community roster — **edit this** to add/remove captains |
 | `BattleSong.mp3` | Battle music (non-copyrighted) — loops during the arena, 🔊 mutes |
 
-### Editing the roster
+## Editing the roster
 
 Open `roster.js` and add a line:
 
 ```js
-{ username: "newmember", name: "New Member", emoji: "🦀", bp: 1200 },
+{ username: "newmember", name: "New Member", emoji: "🦀", bp: 1200, avatar: null },
 ```
 
 `bp` (Builder Points) controls their hull class, reload speed, and aim.
+`avatar` is an optional image URL for the memorial board.
 
-### Tuning the battle
+## Tuning the battle
 
 All pacing knobs live at the top of `game.js`: hull HP/speed in `HULLS`,
 cannonball damage in the ball-hit branch of `step()`, storm timing in
-`STORM`, and accuracy falloff in `fireBroadside()`.
+`STORM`, and accuracy falloff in `fireBroadside()`. Match pacing was tuned
+by running full headless AI-only battles via the `window.__broadside`
+debug hook (start / step / state) — handy if you want to rebalance.
+
+---
+
+*Built with [Claude Code](https://claude.com/claude-code) for the Prompted July Games Contest.* 🏴‍☠️
