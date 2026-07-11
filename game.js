@@ -84,7 +84,12 @@ function submitScore(place) {
   G.playerScore = s;
   try {
     if (window.prmpted && window.prmpted.score) {
-      window.prmpted.score(s, { meta: { captain: G.captain.username, place, kills: G.playerShip.kills } })
+      // Fair Seas is the main board; Builder's Might scores rank on their own board
+      window.prmpted.score(s, {
+        board: G.bpMode ? "builders_might" : "default",
+        meta: { captain: G.captain.username, place, kills: G.playerShip.kills,
+                mode: G.bpMode ? "builders_might" : "fair_seas" },
+      })
         .then((res) => {
           if (res && res.ok && res.improved) {
             const el = document.getElementById("end-rank");
@@ -100,12 +105,14 @@ const BALL_G   = 22;     // cannonball gravity
 const BALL_VY  = 14;     // launch climb speed → ~1.27s flight
 const MAX_VH   = 52;     // max horizontal ball speed
 const FIRE_RANGE = 64;
-const HULLS = {          // ship class by Builder Points tier
+const PLAYER_RELOAD = 2.4;   // 25% faster than the 3.2s the AI baseline implies
+const HULLS = {          // ship class by Builder Points tier (Builder's Might mode)
   manowar:    { name: "Man o' War", len: 5, hp: 175, spd: 9.0,  turn: 0.50, guns: 5 },
   galleon:    { name: "Galleon",    len: 4, hp: 140, spd: 10.5, turn: 0.65, guns: 4 },
   brigantine: { name: "Brigantine", len: 3, hp: 115, spd: 12.0, turn: 0.82, guns: 3 },
 };
 function hullFor(cap) {
+  if (!G.bpMode) return HULLS.galleon;   // Fair Seas: every crew sails an even keel
   const sorted = [...ROSTER].sort((a, b) => b.bp - a.bp);
   const i = sorted.indexOf(cap);
   return i < 8 ? HULLS.manowar : i < 16 ? HULLS.galleon : HULLS.brigantine;
@@ -514,6 +521,7 @@ function sinkShipMesh(mesh) {
 /* ── Game state ───────────────────────────────────────────────────── */
 const G = {
   mode: "title",       // title | arena
+  bpMode: false,       // false = Fair Seas (even ships) · true = Builder's Might (BP perks)
   over: false,
   paused: false,
   ships: [],           // all ships, dead ones flagged
@@ -526,10 +534,13 @@ const G = {
   winner: null,
 };
 const aliveShips = () => G.ships.filter(s => s.alive);
+try { G.bpMode = localStorage.getItem("br_mode") === "bp"; } catch (_) {}
 
 const bpLo = Math.min(...ROSTER.map(r => r.bp));
 const bpHi = Math.max(...ROSTER.map(r => r.bp));
 const smartness = (bp) => 0.2 + 0.75 * ((bp - bpLo) / Math.max(1, bpHi - bpLo));
+const FAIR_SMART = 0.55;   // Fair Seas: one aim/reload skill for every AI captain
+const aiSkill = (cap) => G.bpMode ? smartness(cap.bp) : FAIR_SMART;
 
 const STORM = { grace: 25, rate: 1.05, minR: 30, damage: 6, attrition: 1.6, startR: 215 };
 
@@ -547,12 +558,12 @@ function makeShip(cap, isPlayer, pos) {
     speed: hull.spd * 0.5,
     vel: new THREE.Vector3(),
     rl: { port: Math.random() * 2, star: Math.random() * 2 },
-    reload: isPlayer ? 3.2 : 4.8 - 1.7 * smartness(cap.bp),
+    reload: isPlayer ? PLAYER_RELOAD : 4.8 - 1.7 * aiSkill(cap),
     halfLen: (hull.len * CELL * 0.88) / 2 + 1.8,
     kills: 0, dmg: 0,
     place: null, sunkBy: null, deathTime: null,
     fires: 0,                     // deck fires spawned
-    ai: isPlayer ? null : { smart: smartness(cap.bp), target: null, retarget: 2 + Math.random() * 6 },
+    ai: isPlayer ? null : { smart: aiSkill(cap), target: null, retarget: 2 + Math.random() * 6 },
     label: null, labelCv: null,
   };
   makeLabel(ship);
@@ -1113,6 +1124,11 @@ function step(dt) {
 window.__broadside = {
   start: (i) => startArena(ROSTER[i ?? 0]),
   step,
+  mode: setMode,
+  ships: () => G.ships.map(s => ({
+    len: s.hull.len, reload: +s.reload.toFixed(3),
+    smart: s.ai ? +s.ai.smart.toFixed(3) : null,
+  })),
   state: () => ({
     mode: G.mode,
     over: G.over,
@@ -1187,12 +1203,25 @@ function buildRoster() {
          target="_blank" rel="noopener" onclick="event.stopPropagation()"
          title="visit @${esc(cap.username)} on prmpted">@${esc(cap.username)}</a>
       <div class="cbp">⚜ ${cap.bp.toLocaleString()} BP</div>
-      <div class="chull">⛵ ${hullFor(cap).name}</div>`;
+      <div class="chull">⛵ ${G.bpMode ? hullFor(cap).name : "Galleon — even keel"}</div>`;
     card.onclick = () => startArena(cap);
     grid.appendChild(card);
   }
 }
-buildRoster();
+
+function setMode(bp) {
+  G.bpMode = bp;
+  try { localStorage.setItem("br_mode", bp ? "bp" : "fair"); } catch (_) {}
+  document.getElementById("mode-fair").classList.toggle("sel", !bp);
+  document.getElementById("mode-bp").classList.toggle("sel", bp);
+  document.getElementById("roster-sub").textContent = bp
+    ? "Builder Points decide their hull, reload, and aim. Might makes right."
+    : "Every captain sails the same Galleon — no Builder Point perks. Pure seamanship decides.";
+  buildRoster();
+}
+document.getElementById("mode-fair").onclick = () => setMode(false);
+document.getElementById("mode-bp").onclick = () => setMode(true);
+setMode(G.bpMode);
 
 document.getElementById("mutebtn").onclick = function () {
   AudioFX.toggle();

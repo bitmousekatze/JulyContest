@@ -15,9 +15,12 @@ live cannon fire, a closing storm, one crown. Last ship afloat wins.
 
 - **Choose yer Captain** — the roster is the real Prompted leaderboard
   (top 24 by Builder Points, pulled 2026-07-10), real avatars included.
-- **Hulls by Builder Points** — top 8 sail a Man o' War (5 guns/side, tanky,
-  slow), middle 8 a Galleon, the rest a nimble Brigantine. Higher BP also
-  means faster reloads and truer aim.
+- **Two modes** — **⚖️ Fair Seas** (default): every captain sails the same
+  Galleon with the same reload and aim — Builder Points grant no combat
+  perks, pure seamanship decides. **⚜ Builder's Might**: the classic mode —
+  top 8 by BP sail a Man o' War (5 guns/side, tanky, slow), middle 8 a
+  Galleon, the rest a nimble Brigantine; higher BP also means faster
+  reloads and truer aim. Each mode has its own high-score leaderboard.
 - **Free naval combat** — broadsides fire from your ship's sides, cannonballs
   fly a real ballistic arc, and accuracy falls off hard with distance. Close
   in for a killing volley, or kite at range and dodge.
@@ -45,7 +48,7 @@ live cannon fire, a closing storm, one crown. Last ship afloat wins.
 | `gunslinger` | 3 ships sunk in one battle |
 | `fleet_admiral` | 5 ships sunk in one battle |
 | `deadeye` | Killing volley from beyond 55m |
-| `underdog_upset` | Sink a Man o' War from a Brigantine |
+| `underdog_upset` | Sink a Man o' War from a Brigantine (Builder's Might mode) |
 | `broadside_maestro` | Every ball of one volley hits the same ship |
 | `last_ship_afloat` | Win a royale |
 | `close_shave` | Win with hull under 10% |

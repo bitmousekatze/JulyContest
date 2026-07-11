@@ -93,6 +93,22 @@
     display: inline-block; margin-top: 10px; padding: 4px 18px; border: 1px solid var(--gold-dim);
     border-radius: 20px; color: var(--gold); font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
   }
+  #mode-toggle { display: flex; gap: 12px; margin-top: 18px; }
+  .mode-btn {
+    font-family: "Pirata One", Georgia, serif; font-size: 19px; letter-spacing: 2px;
+    background: var(--panel); border: 1px solid #2e3f56; color: #9fb0c4;
+    border-radius: 10px; padding: 9px 26px 7px; cursor: pointer; text-align: center;
+    transition: border-color .1s, color .1s, box-shadow .1s;
+  }
+  .mode-btn span {
+    display: block; font-family: "IM Fell English", Georgia, serif; font-style: italic;
+    font-size: 11.5px; letter-spacing: 0; color: #7d8ea3; margin-top: 1px;
+  }
+  .mode-btn:hover { border-color: var(--gold-dim); }
+  .mode-btn.sel {
+    border-color: var(--gold); color: var(--gold);
+    box-shadow: 0 0 14px rgba(232,182,76,.2), inset 0 0 10px rgba(232,182,76,.06);
+  }
   #roster-heading { margin: 20px 0 4px; color: var(--parchment); font-size: 26px; }
   #roster-sub { font-size: 14px; color: #8fa2b8; font-style: italic; margin-bottom: 12px; }
   #roster-grid {
@@ -303,8 +319,12 @@
     <div class="sub">A pirate-age battle arena upon the high seas of Prompted</div>
     <div class="contest-tag">July Games Contest · 24 sail in · 1 sails out</div>
   </div>
+  <div id="mode-toggle">
+    <button class="mode-btn sel" id="mode-fair">⚖️ FAIR SEAS<span>even ships for all — pure seamanship</span></button>
+    <button class="mode-btn" id="mode-bp">⚜ BUILDER'S MIGHT<span>BP decides hull, reload &amp; aim</span></button>
+  </div>
   <div id="roster-heading" class="pirate">Choose yer Captain</div>
-  <div id="roster-sub">Every other captain takes the sea against ye. Builder Points decide their hull — and their aim.</div>
+  <div id="roster-sub">Every captain sails the same Galleon — no Builder Point perks. Pure seamanship decides.</div>
   <div id="roster-grid"></div>
 </div>
 
