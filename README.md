@@ -14,7 +14,7 @@ live cannon fire, a closing storm, one crown. Last ship afloat wins.
 ## How it works
 
 - **Choose yer Captain** — the roster is the real Prompted leaderboard
-  (top 24 by Builder Points, pulled 2026-07-10), real avatars included.
+  (top 24 by Builder Points, pulled 2026-07-12), real avatars included.
 - **Two modes** — **⚖️ Fair Seas** (default): every captain sails the same
   Galleon with the same reload and aim — Builder Points grant no combat
   perks, pure seamanship decides. **⚜ Builder's Might**: the classic mode —
