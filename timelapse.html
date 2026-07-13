@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompted — Builder Points: The Story So Far (from Feb 20, 2026)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #121724;
+    --track: #1d2436;
+    --text: #e8ecf4;
+    --dim: #5a6478;
+    --gold: #f5c542;
+    --row-h: 50px;
+    --rows: 12;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Chakra Petch', system-ui, sans-serif;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .stage {
+    width: min(960px, 96vw);
+    padding: 28px 32px 20px;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid var(--track);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+  }
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.28em;
+    color: var(--dim);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+  }
+  h1 .accent { color: var(--gold); }
+  .game-link {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--dim);
+    text-decoration: none;
+  }
+  .game-link:hover { color: var(--gold); }
+  .clock { text-align: right; }
+  .clock .date {
+    font-size: 30px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    transition: color 0.3s, text-shadow 0.3s;
+  }
+  .clock .date.flash {
+    color: var(--gold);
+    text-shadow: 0 0 24px rgba(245, 197, 66, 0.55);
+  }
+  .clock .day-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    color: var(--dim);
+    margin-top: 2px;
+  }
+
+  /* ---------- race ---------- */
+  .race {
+    position: relative;
+    height: calc(var(--row-h) * var(--rows));
+  }
+  .row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: var(--row-h);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    will-change: transform, opacity;
+  }
+  .rank {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--dim);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .row.leader .rank { color: var(--gold); }
+  .chip {
+    position: relative;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0b0e14;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .chip img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  body.paused .row { cursor: pointer; }
+  body.paused .row:hover .name {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .bar-track { position: relative; flex: 1; height: 34px; }
+  .bar {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: 6px;
+    min-width: 4px;
+    opacity: 0.92;
+  }
+  .row.leader .bar {
+    box-shadow: 0 0 18px -2px rgba(245, 197, 66, 0.35);
+    outline: 1px solid rgba(245, 197, 66, 0.5);
+  }
+  .bar-label {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .name { font-size: 14px; font-weight: 600; letter-spacing: 0.02em; }
+  .handle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: rgba(232, 236, 244, 0.55);
+  }
+  .pts {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    width: 72px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .row.leader .pts { color: var(--gold); }
+
+  /* ---------- event ticker (signature) ---------- */
+  .ticker {
+    height: 34px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    letter-spacing: 0.04em;
+    color: var(--gold);
+    opacity: 0;
+    transition: opacity 0.45s;
+  }
+  .ticker.show { opacity: 1; }
+  .ticker .bolt { font-size: 14px; }
+  .ticker .evt-date { color: var(--dim); }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-top: 1px solid var(--track);
+    padding-top: 14px;
+  }
+  button {
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--panel);
+    color: var(--text);
+    border: 1px solid var(--track);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  #playBtn {
+    width: 42px;
+    height: 32px;
+    font-size: 13px;
+  }
+  #playBtn:hover { border-color: var(--gold); }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--gold);
+    cursor: pointer;
+  }
+  input[type="range"]:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; }
+  .speeds { display: flex; gap: 4px; }
+  .speeds button {
+    padding: 5px 9px;
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .speeds button.on {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+  .hint {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 640px) {
+    :root { --row-h: 42px; }
+    .stage { padding: 16px; }
+    h1 { font-size: 18px; }
+    .clock .date { font-size: 20px; }
+    .handle, .hint { display: none; }
+    .pts { width: 56px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+  <header>
+    <div>
+      <div class="eyebrow">Prompted &middot; Builder Points</div>
+      <h1>The Story So Far <span class="accent">&mdash; replay</span></h1>
+      <a class="game-link" href="index.html">&#9875; sail this leaderboard in Broadside Royale &rarr;</a>
+    </div>
+    <div class="clock">
+      <div class="date" id="dateEl">FEB 20</div>
+      <div class="day-count" id="dayEl">DAY 0 / 142</div>
+    </div>
+  </header>
+
+  <div class="race" id="race"></div>
+
+  <div class="ticker" id="ticker">
+    <span class="bolt">&#9889;</span>
+    <span id="tickerText"></span>
+    <span class="evt-date" id="tickerDate"></span>
+  </div>
+
+  <div class="controls">
+    <button id="playBtn" aria-label="Play or pause">&#9616;&#9616;</button>
+    <input type="range" id="scrub" min="0" max="142" step="0.01" value="0" aria-label="Timeline position">
+    <div class="speeds" id="speeds">
+      <button data-s="0.5">&frac12;&times;</button>
+      <button data-s="1" class="on">1&times;</button>
+      <button data-s="2">2&times;</button>
+      <button data-s="4">4&times;</button>
+    </div>
+    <span class="hint">SPACE PLAY &middot; &larr;&rarr; SCRUB &middot; PAUSE + CLICK = PROFILE</span>
+  </div>
+</div>
+
+<script>
+// Reconstructed from builder_points_log (Feb 20 – Jul 12, 2026).
+// Each user: u=username, n=display_name, c=name_color, s=[[dayIndex, pointsEarned], ...]
+// Includes every account that ever reached the daily top 18, plus the owner
+// account (mouse) which the live leaderboard hides; suspended profiles excluded.
+const START = Date.UTC(2026, 1, 20);
+const DAYS = 143;
+
+const USERS = [
+{u:"actmathsprint",n:"actmath sprint",c:null,s:[[0,10],[8,2],[69,210],[71,2],[72,2],[75,6],[76,4],[103,2]]},
+{u:"amira_zainab",n:"Zaineee",c:"#F39C12",s:[[22,23],[23,3],[27,9],[28,3],[29,3],[30,6],[31,11],[32,6],[33,3],[34,6],[35,12],[41,3],[42,2],[46,18],[47,14],[48,6],[49,6],[51,9],[53,3],[57,3],[63,4],[69,1420],[71,4],[74,4],[75,12],[76,8],[112,5]]},
+{u:"arinzaay",n:"Arinzaay",c:"#E91E63",s:[[0,40],[1,15],[2,10],[6,13],[7,10],[8,31],[11,14],[12,2],[13,13],[14,7],[15,3],[18,3],[32,3],[33,3],[34,3],[35,3],[39,32],[40,2],[42,2],[46,3],[47,3],[48,6],[49,3],[51,3],[63,12],[69,2270],[71,18],[72,6],[74,6],[75,50],[76,36],[90,5],[92,2],[102,2],[103,3],[139,503]]},
+{u:"charleeai",n:"charlee",c:"#FFD700",s:[[17,3],[20,3],[22,3],[26,6],[28,6],[31,6],[32,9],[33,3],[35,3],[46,3],[51,3],[69,445]]},
+{u:"chinaza",n:"Chinaza Builds",c:null,s:[[12,15],[13,4],[14,4],[63,2],[69,470],[71,2],[74,4],[75,4],[76,4],[122,6]]},
+{u:"christain_zedd",n:"Zedd",c:"#A29BFE",s:[[22,3],[23,3],[26,3],[27,6],[28,6],[29,3],[30,3],[31,9],[32,6],[33,6],[34,3],[35,12],[41,3],[46,6],[48,3],[49,3],[51,6],[53,9],[57,3],[69,985]]},
+{u:"col_asy",n:"Ayush",c:"#E91E63",s:[[63,174],[64,63],[65,270],[66,28],[67,4],[68,3],[69,3751],[74,2],[75,12],[76,8]]},
+{u:"cyclops",n:"cyclops",c:"#A29BFE",s:[[15,3],[20,3],[28,3],[29,3],[30,3],[31,3],[32,6],[33,6],[34,3],[35,12],[41,3],[46,3],[47,3],[48,3],[49,6],[51,12],[53,6],[55,3],[57,6],[69,1245]]},
+{u:"daredevil",n:"DaReDeViL",c:"#00CEC9",s:[[17,3],[26,3],[27,6],[28,3],[30,3],[31,6],[32,9],[33,6],[34,6],[35,12],[41,3],[46,12],[47,6],[48,3],[49,6],[51,6],[53,9],[55,3],[57,6],[69,1270]]},
+{u:"dnade",n:"Doug",c:null,s:[[0,20],[4,26],[6,6],[19,26],[63,6],[69,670],[71,10],[72,4],[74,4],[75,30],[76,20]]},
+{u:"emythedev",n:"Emily",c:null,s:[[14,3],[17,6],[37,12],[50,12],[54,12],[56,9],[69,1404],[71,12],[73,9],[74,3],[76,3],[77,3],[96,3],[97,3],[98,6],[99,3],[100,3],[101,3],[104,3],[105,6],[106,3],[108,3],[126,3],[127,3],[134,3],[135,3],[137,3]]},
+{u:"ezech",n:"EZECHI",c:null,s:[[20,3],[22,3],[23,3],[24,3],[26,6],[28,6],[30,3],[31,9],[32,3],[33,3],[51,6],[69,470]]},
+{u:"flash",n:"RJ",c:null,s:[[0,10],[69,175],[71,2],[72,2],[74,2],[75,6],[76,4]]},
+{u:"godofprompt",n:"God of Prompt",c:"#A29BFE",s:[[20,3],[23,3],[26,3],[27,6],[28,3],[30,3],[31,3],[32,3],[33,9],[34,3],[35,12],[41,3],[46,9],[47,6],[48,3],[49,6],[51,9],[53,12],[55,3],[57,6],[69,885]]},
+{u:"gracetech",n:"I am Grace",c:"#FD79A8",s:[[22,3],[23,3],[26,6],[28,9],[30,3],[31,6],[32,6],[33,6],[34,3],[35,6],[46,3],[51,3],[69,435]]},
+{u:"herz",n:"Jack Herzlich",c:"#9B59B6",s:[[0,163],[1,6],[2,2],[6,3],[7,3],[8,6],[11,3],[14,3],[17,5],[20,2],[41,44],[42,2],[48,12],[60,2],[62,6],[64,6],[65,6],[68,3],[69,2395],[70,256],[71,32],[72,30],[74,4],[75,96],[76,64],[78,3],[83,6],[84,3],[85,3],[88,3],[90,3],[91,6],[94,3],[99,3],[106,3],[112,3],[113,6],[115,6],[116,500],[117,6],[118,8],[119,10],[120,12],[121,264],[122,16],[123,18],[124,20],[125,22],[126,23],[127,5],[128,3],[130,3],[134,3],[141,3]]},
+{u:"httpken",n:"Httpken",c:null,s:[[0,26],[7,4],[69,345],[71,4],[72,4],[74,2],[75,12],[76,8],[103,2]]},
+{u:"iamyashgawande",n:"Yash Gawande",c:null,s:[[0,6],[69,295]]},
+{u:"idknows",n:"Idhika",c:null,s:[[36,9],[38,15],[39,9],[51,9],[52,15],[54,15],[56,12],[59,9],[61,6],[69,1110],[80,3],[81,6],[82,3],[83,6],[84,6],[85,3],[86,3]]},
+{u:"jacksparrow",n:"Jack Sparrow",c:"#00CEC9",s:[[17,3],[20,3],[23,3],[24,6],[26,3],[27,3],[28,6],[31,12],[32,6],[33,3],[34,3],[35,6],[41,3],[46,3],[47,3],[48,3],[51,9],[53,6],[55,6],[57,9],[69,985]]},
+{u:"jameschris",n:"Poseidon God of sea",c:null,s:[[9,12],[14,2],[63,2],[69,235],[71,2],[74,4],[75,4],[76,4]]},
+{u:"janecodes",n:"Code With Jane",c:null,s:[[15,9],[16,18],[17,5],[18,4],[19,2],[20,3],[23,3],[26,6],[27,3],[28,3],[30,3],[31,6],[32,3],[33,3],[34,3],[35,12],[41,3],[46,6],[47,6],[48,3],[49,6],[51,6],[53,9],[57,6],[63,2],[69,970],[71,2],[74,2],[75,6],[76,4],[103,2]]},
+{u:"johnsmith",n:"John Smith",c:null,s:[[9,14],[63,2],[69,235],[71,2],[74,2],[75,4],[76,4],[103,2]]},
+{u:"jon_hill",n:"Jon Hill",c:"#00CEC9",s:[[20,3],[23,3],[26,3],[27,6],[28,6],[30,3],[31,3],[32,6],[33,3],[34,3],[35,9],[41,3],[46,9],[47,6],[48,6],[49,6],[51,12],[53,12],[55,6],[57,9],[69,995]]},
+{u:"josh1",n:"Joshua",c:null,s:[[14,9],[15,3],[17,3],[36,43],[37,12],[38,17],[39,14],[40,12],[42,2],[50,15],[54,15],[56,12],[59,9],[61,9],[62,9],[63,8],[65,3],[66,6],[67,3],[68,3],[69,3798],[71,14],[73,3],[75,6],[76,7],[78,9],[80,3],[81,6],[82,3],[83,9],[85,3],[87,3],[88,3],[89,3],[90,3],[91,3],[95,3],[96,3],[98,6],[101,3],[108,3],[116,3],[123,3],[126,3],[127,3],[135,3],[137,3]]},
+{u:"justanewbie",n:"JUSTANEWBIE",c:"#F39C12",s:[[10,12],[11,2],[12,2],[14,2],[20,2],[34,3],[35,3],[63,2],[69,510],[71,2],[74,4],[75,4],[76,4],[93,5]]},
+{u:"justfrank",n:"JUSTFRANK",c:"#4ECDC4",s:[[13,3],[14,3],[15,3],[20,3],[22,3],[23,3],[28,3],[30,3],[31,9],[32,6],[33,6],[34,6],[46,3],[48,3],[51,9],[53,3],[69,435]]},
+{u:"khadija",n:"Dee",c:null,s:[[23,3],[26,9],[27,3],[28,6],[30,3],[31,6],[32,3],[33,3],[34,6],[35,6],[41,3],[46,6],[48,3],[49,6],[51,6],[53,9],[57,3],[69,1035],[81,38]]},
+{u:"ktb",n:"Evan Wadsworth",c:null,s:[[92,284],[93,135],[94,72],[95,127],[97,100],[99,459],[100,3],[101,244],[102,4],[103,110],[105,26],[106,286],[107,4],[112,2],[113,4],[128,4]]},
+{u:"latieng",n:"Lateef",c:null,s:[[18,20],[19,6],[36,15],[37,12],[50,12],[56,6],[59,9],[60,3],[62,3],[63,8],[65,6],[66,6],[67,3],[68,3],[69,1973],[71,8],[73,6],[74,5],[75,6],[76,7],[77,3],[78,12],[80,3],[81,6],[82,3],[83,6],[84,3],[86,3],[87,3],[88,3],[90,3],[91,8],[94,3],[95,3],[96,3],[97,3],[98,3],[99,3],[113,3],[116,3],[118,6],[120,3],[122,2],[127,3],[134,3]]},
+{u:"leonlin",n:"Leon Lin",c:null,s:[[7,14],[8,4],[63,2],[69,195],[71,2],[75,6],[76,4]]},
+{u:"littlespidey",n:"Littlespidey",c:null,s:[[8,16],[16,2],[63,2],[69,250],[71,2],[74,2],[75,4],[76,4]]},
+{u:"lyde",n:"Lydia",c:null,s:[[36,15],[37,15],[54,12],[69,1520],[74,3],[76,3],[123,3]]},
+{u:"mautheng",n:"Maurice",c:null,s:[[37,9],[39,9],[40,9],[51,15],[52,15],[54,12],[56,9],[60,6],[61,6],[62,3],[63,6],[69,1345],[79,3],[84,3],[85,6],[86,3],[88,3],[89,3],[100,3],[101,3],[104,3],[105,3],[106,6],[108,3]]},
+{u:"maxiagent",n:"Maxim Build",c:null,s:[[37,15],[38,12],[47,24],[49,4],[52,15],[54,12],[56,9],[59,3],[60,3],[61,6],[62,6],[63,2],[64,19],[69,1695],[75,6],[76,4],[88,3],[89,3],[90,6],[91,6],[109,3],[110,3],[111,3]]},
+{u:"mcqueen",n:"The devquee",c:"#FD79A8",s:[[36,18],[37,15],[38,9],[39,12],[40,15],[51,15],[52,15],[54,15],[56,12],[59,9],[61,6],[62,3],[64,15],[66,3],[69,2070],[79,3],[81,3],[82,6],[84,3],[85,6],[86,3],[87,3],[88,3],[89,3]]},
+{u:"medusai",n:"MEDUSA AI",c:"#FF6B6B",s:[[13,3],[20,3],[22,3],[23,3],[26,6],[28,6],[30,3],[31,6],[32,6],[33,3],[34,3],[35,3],[46,3],[48,3],[51,3],[53,3],[57,3],[69,1085]]},
+{u:"minerxx",n:"Sulaimon",c:null,s:[[12,10],[13,6],[14,4],[15,6],[16,20],[17,10],[18,8],[19,9],[36,15],[38,28],[39,42],[40,51],[41,6],[42,6],[51,12],[52,3],[54,12],[63,10],[69,1870],[71,10],[74,4],[75,30],[76,20],[78,3],[102,4]]},
+{u:"mollie",n:"Mollie",c:"#00B894",s:[[0,10],[3,32],[4,2],[6,12],[7,7],[8,3],[9,12],[17,12],[18,9],[19,4],[24,6],[34,27],[36,27],[39,30],[42,6],[52,28],[53,2],[62,6],[63,18],[64,13],[66,15],[69,2610],[70,25],[71,19],[72,2],[74,20],[75,52],[76,548],[81,59],[83,12],[92,2],[103,2],[114,6],[115,8],[117,6],[118,8],[119,10],[120,12],[122,232],[123,36],[124,63],[125,12],[126,14],[127,56],[128,54],[129,14],[130,39],[131,10],[132,6],[134,524],[136,12],[138,13],[139,3],[140,2]]},
+{u:"mouse",n:"mousedevv",c:"#00CEC9",s:[[68,14],[69,314],[70,370],[71,104],[72,4],[73,1691],[74,1922],[75,672],[76,20],[77,110],[78,301],[79,10],[80,4],[81,383],[82,510],[83,8],[85,2],[87,5],[89,278],[92,2],[101,35],[103,6],[105,2],[106,50],[111,12],[112,28],[113,508],[114,20],[115,13],[116,6],[119,30],[120,15],[122,24],[123,14],[124,14],[125,2],[127,120],[128,128],[129,32],[130,14],[131,28],[132,38],[133,28],[134,54],[135,76],[137,36],[139,40],[140,30],[141,30]]},
+{u:"omabuilds",n:"Omalicha",c:"#FD79A8",s:[[23,3],[26,12],[27,6],[28,24],[29,3],[30,3],[31,3],[32,3],[33,3],[34,8],[35,3],[36,2],[41,3],[42,2],[46,3],[47,3],[48,3],[49,3],[51,6],[53,3],[55,3],[57,6],[63,2],[69,895],[71,2],[74,2],[75,6],[76,4]]},
+{u:"peter",n:"Peter",c:null,s:[[9,18],[13,2],[63,2],[69,220],[71,2],[74,2],[75,4],[76,4],[90,5]]},
+{u:"petitestella",n:"Petite Stella",c:"#FFD700",s:[[13,23],[14,9],[15,6],[18,2],[20,3],[22,3],[23,3],[26,3],[28,6],[29,3],[30,3],[31,6],[32,6],[33,3],[34,3],[35,9],[41,3],[46,3],[48,6],[49,3],[51,6],[57,3],[63,2],[69,1060],[71,2],[74,2],[75,6],[76,4]]},
+{u:"princejake",n:"Prince Jake",c:"#2ECC71",s:[[23,3],[24,3],[26,6],[27,6],[28,6],[30,3],[31,6],[32,3],[33,3],[34,6],[35,3],[41,3],[47,3],[49,3],[51,6],[53,3],[55,3],[57,6],[69,920]]},
+{u:"regina_stones",n:"Regina Stones",c:null,s:[[20,3],[23,3],[24,3],[26,3],[27,3],[28,6],[30,3],[31,6],[32,3],[33,3],[34,6],[35,6],[41,3],[46,3],[47,3],[48,3],[49,3],[51,6],[53,3],[55,3],[69,885]]},
+{u:"romeo",n:"Dev Romeo",c:null,s:[[15,3],[17,3],[20,3],[23,3],[24,3],[26,6],[27,9],[28,6],[29,3],[30,3],[31,6],[32,6],[33,3],[34,6],[35,6],[41,3],[46,6],[47,3],[48,3],[49,3],[51,9],[53,6],[55,6],[57,9],[69,1045]]},
+{u:"sal",n:"Salvatore Capece",c:null,s:[[0,30],[7,2],[8,6],[42,14],[69,570],[71,6],[72,6],[74,4],[75,18],[76,12],[83,100],[89,106],[115,6]]},
+{u:"santaclaude",n:"santa claude",c:"#A29BFE",s:[[17,3],[20,3],[23,3],[24,3],[27,6],[28,6],[31,6],[32,3],[33,3],[34,3],[35,3],[41,3],[46,6],[47,3],[48,3],[51,6],[53,3],[55,3],[57,9],[69,1135]]},
+{u:"sasam",n:"sasam",c:"#FFD700",s:[[112,564],[113,10],[114,194],[115,16],[116,261],[117,38],[118,20],[119,20],[120,24],[121,20],[122,20],[123,20],[124,20],[125,20],[127,4],[128,20],[129,28],[130,36],[131,28],[132,32],[133,32],[134,36],[135,210],[136,60],[137,66],[138,76],[139,82],[140,700],[141,70],[142,40]]},
+{u:"shreey",n:"Shreya",c:null,s:[[38,15],[40,12],[52,15],[54,3],[56,12],[59,9],[60,9],[63,3],[65,3],[66,3],[69,1676],[80,3],[97,3],[123,3]]},
+{u:"sophie",n:"sophie green",c:"#E91E63",s:[[23,3],[24,6],[26,3],[27,3],[28,6],[30,3],[31,6],[32,3],[33,3],[34,3],[35,3],[41,3],[46,3],[47,3],[48,6],[51,12],[53,3],[55,3],[57,3],[69,960],[81,30],[82,2],[83,2],[84,2]]},
+{u:"spiderboyis",n:"Harshit Mathur",c:null,s:[[65,96],[67,15],[68,6],[69,970],[74,2],[75,6],[76,4]]},
+{u:"thebuilderx",n:"Arqon",c:null,s:[[63,30],[64,4],[65,15],[68,9],[69,2901],[70,3],[71,158],[75,4],[76,4],[78,56],[100,200],[108,250],[113,6],[114,8],[115,10],[116,12],[117,14],[122,28],[123,10],[124,32],[125,20],[126,30],[127,80],[128,60],[129,451],[130,70],[131,46],[132,46],[133,40],[134,40],[135,140],[136,40],[138,80],[139,40],[140,40],[141,40],[142,40]]},
+{u:"uche",n:"Uchemarvellous",c:null,s:[[1,16],[2,2],[5,2],[6,2],[7,2],[9,4],[63,2],[69,245],[71,2],[74,2],[75,6],[76,4]]},
+{u:"user_8a094020",n:"Angel Fernandez",c:null,s:[[6,14],[7,2],[9,2],[63,2],[69,235],[71,2],[75,6],[76,4]]},
+{u:"vicdengineeer",n:"viktor",c:null,s:[[38,12],[69,1532],[71,12],[73,9],[100,3],[104,3],[105,6],[106,6]]},
+{u:"vision",n:"Vision",c:null,s:[[60,147],[61,6],[62,6],[63,186],[64,149],[65,51],[66,10],[67,23],[68,20],[69,5627],[70,255],[71,121],[72,8],[74,255],[75,22],[76,16],[78,12],[79,3],[83,18],[92,4],[101,596],[102,2],[103,60],[104,106],[105,36],[106,277],[107,13],[112,16],[113,8],[114,10],[115,38],[116,25],[117,18],[118,18],[119,20],[120,20],[121,20],[122,22],[123,20],[124,232],[125,258],[126,74],[127,56],[128,90],[129,72],[130,78],[131,42],[132,46],[133,66],[134,66],[135,1040],[136,40],[137,40],[138,40],[139,44],[140,40],[141,40],[142,40]]},
+{u:"zeebee",n:"Zainab",c:"#E91E63",s:[[20,24],[21,2],[22,2],[37,14],[38,12],[42,2],[56,9],[63,2],[67,3],[69,1420],[71,2],[75,6],[76,4],[83,9],[84,3],[86,3],[94,3],[95,3],[125,2],[127,3],[128,2],[134,9],[136,3]]}
+];
+
+// Real product milestones (dates from the migration/commit history).
+const EVENTS = [
+  { d: 0,   text: "Builder Points tracking begins",                        },
+  { d: 69,  text: "Achievements ship — months of building get claimed at once" },
+  { d: 100, text: "Playable games launch"                                  },
+  { d: 118, text: "Learning tracks launch"                                 },
+  { d: 131, text: "June Spotlight winners announced"                       },
+  { d: 139, text: "July Spotlight roulette goes live"                      },
+];
+
+// Real profile pictures from the public avatars bucket (username -> object path).
+// Users absent here never uploaded one; their colored initial chip shows instead.
+const AVATAR_BASE = "https://hgzkeaicuxvqsiacqnul.supabase.co/storage/v1/object/public/avatars/";
+const AVATARS = {
+amira_zainab:"e2ecfba1-a68f-4443-9bfa-4d994a28b29c/avatar.png",
+arinzaay:"9890c16c-6d99-44a7-b12a-33e506f88e82/avatar.jpg",
+charleeai:"f7696ca2-642d-4fc7-91c3-8f2771b0d33a/avatar.png",
+chinaza:"b91789b6-3f3b-42f6-bef6-d52a0e1dc273/avatar.jpg",
+christain_zedd:"54f0900f-5d81-4166-b617-969273fef0cb/avatar.png",
+col_asy:"a2b9e351-5955-46a6-90a5-e36184dfe3de/avatar.jpg",
+cyclops:"ed2e0627-616b-46ad-b251-fd2437247c9b/avatar.png",
+daredevil:"30761bf3-22b8-4f14-8231-d6e6dc19086d/avatar.png",
+dnade:"1f9ab50d-a9cb-4e34-a054-794fba8fa792/avatar.png",
+emythedev:"2e5cd5da-e5c7-4147-866a-8946e557c006/avatar.jpeg",
+ezech:"74e517b2-f2fe-45ab-ad70-2e5d41759222/avatar.png",
+flash:"d41c6e8c-59aa-472d-a2eb-f8830f86d61e/avatar.jpg",
+godofprompt:"1df77a62-6d49-4fda-b249-0095d18d47f8/avatar.png",
+gracetech:"26698131-1e67-4037-b74c-1bce55a4289b/avatar.png",
+herz:"8e19c3a3-7e32-4323-8992-3b26ade58ae0/avatar.jpg",
+httpken:"e2ab9c92-2f4b-49de-a6cc-f511c2be478c/avatar.jpg",
+idknows:"1e305882-db29-45a7-80ed-b7237137bf33/avatar.jpg",
+jacksparrow:"7f77f74c-0eaa-4ad3-979d-ed0e8e68da07/avatar.png",
+jameschris:"57ab9109-bb02-4e62-bc08-d1f265f6437f/avatar.jpeg",
+janecodes:"81d0f62f-af48-471f-9332-20e8473bd399/avatar.png",
+johnsmith:"5598b0e6-f0a8-42ee-9c4f-89b6d8a8e4ae/avatar.jpeg",
+jon_hill:"847a0c1f-507b-42ec-93ce-f4d9923aabcb/avatar.png",
+josh1:"666187f6-f7ea-4329-a947-c6a72f421fa2/avatar.jpeg",
+justanewbie:"60f093cb-9cb2-4899-8818-5331d5997404/avatar.png",
+justfrank:"eebd3b30-a105-4b0c-8673-094ea5418a6b/avatar.png",
+khadija:"0fd5a174-04e6-449b-bfb1-06ee35468a94/avatar.png",
+ktb:"c23ff79e-7595-4573-a188-b0f3cf6b025b/avatar.jpg",
+latieng:"873860da-0335-48bc-8c05-df7712431f27/avatar.jpeg",
+leonlin:"01351f2a-2dfb-4b45-a90e-2f902d288b4a/avatar.jfif",
+littlespidey:"6a9412f5-1c23-45f8-9415-80cdbd46aefa/avatar.jpg",
+lyde:"9551f059-3516-485e-9f59-c08008fff59d/avatar.jpeg",
+mautheng:"a7f6b4b1-63c4-4eff-a27c-be71c634b130/avatar.jpg",
+maxiagent:"1f272ae0-dd8e-415d-8d2f-722ba0ca8c40/avatar.jpg",
+mcqueen:"dee35d7e-f7d4-4c34-b572-d7338f6cfa75/avatar.jpg",
+medusai:"72023eed-b567-4413-b2ab-1de04a16000c/avatar.png",
+minerxx:"cea3b363-dd88-44b5-93e1-4bcff36237f3/avatar.jpg",
+mollie:"d79a97d2-8d4d-4f98-b5b4-43d55de879da/avatar.jpg",
+mouse:"1367d221-a40e-463f-b168-711ada241bf6/avatar.jpg",
+omabuilds:"94d5631f-2192-40ed-91a1-c6208916357b/avatar.png",
+peter:"fa08e26e-907c-417f-827d-14c50f5b3ab2/avatar.png",
+petitestella:"529a0d3c-94f8-4e0e-a5e1-63ce6ab5ecca/avatar.png",
+regina_stones:"50afa45b-8500-4b51-8d7e-d0b7bdc9efcc/avatar.png",
+romeo:"3f0038dd-d3c8-4375-bec1-f8f64ad8ef4f/avatar.png",
+sal:"e7e97051-fef5-47ff-803f-5822b0bfd691/avatar.jpg",
+santaclaude:"70f786e5-30a0-4ff4-82b8-332e4a62ed5b/avatar.png",
+sasam:"83f54b33-ff77-493c-864a-c3c9f8c07c4b/avatar.jpg",
+shreey:"0edb1a84-b53a-4c13-bf9a-f895c6bd4d5f/avatar.jpg",
+sophie:"57201bc3-6fc0-426d-b40e-119e4fa28c4f/avatar.png",
+spiderboyis:"cb1bb731-74e0-438b-8b73-38efc103d9e6/avatar.jpg",
+uche:"5c298a2a-b0b4-46bf-86a5-e99e29d2d6a3/avatar.jpeg",
+user_8a094020:"8a094020-18ab-453d-bfac-966171e28a91/avatar.jpeg",
+vicdengineeer:"75a55055-55b8-484c-a334-06f4cabb1f6b/avatar.jpeg",
+zeebee:"e14128cd-39f2-4c39-a583-c5328394d078/avatar.jpeg"
+};
+
+const PROFILE_BASE = "https://prmpted.com/";
+const FALLBACK = ["#6C8EEF","#E17055","#00B894","#F39C12","#A29BFE","#00CEC9","#FD79A8","#4ECDC4","#FF6B6B","#2ECC71"];
+const VISIBLE = 12;
+const ROW_H = () => parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-h"));
+
+// Precompute cumulative totals per day.
+USERS.forEach((u, i) => {
+  const cum = new Float64Array(DAYS);
+  u.s.forEach(([d, p]) => { cum[d] += p; });
+  for (let d = 1; d < DAYS; d++) cum[d] += cum[d - 1];
+  u.cum = cum;
+  u.color = u.c || FALLBACK[i % FALLBACK.length];
+  u.smoothY = null;
+});
+
+function valueAt(u, t) {
+  const lo = Math.floor(t), hi = Math.min(lo + 1, DAYS - 1);
+  return u.cum[lo] + (u.cum[hi] - u.cum[lo]) * (t - lo);
+}
+
+const MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+function dayLabel(d) {
+  const dt = new Date(START + Math.floor(d) * 86400000);
+  return MONTHS[dt.getUTCMonth()] + " " + dt.getUTCDate();
+}
+const fmt = n => Math.floor(n).toLocaleString("en-US");
+
+// Build DOM rows once.
+const race = document.getElementById("race");
+USERS.forEach(u => {
+  const row = document.createElement("div");
+  row.className = "row";
+  row.style.opacity = "0";
+  const ava = AVATARS[u.u]
+    ? '<img src="' + AVATAR_BASE + AVATARS[u.u] + '" alt="" loading="lazy" onerror="this.remove()">'
+    : '';
+  row.innerHTML =
+    '<div class="rank"></div>' +
+    '<div class="chip" style="background:' + u.color + '">' + u.n.trim().charAt(0).toUpperCase() + ava + '</div>' +
+    '<div class="bar-track">' +
+      '<div class="bar" style="background:linear-gradient(90deg,' + u.color + 'cc,' + u.color + '55)"></div>' +
+      '<div class="bar-label"><span class="name">' + u.n + '</span><span class="handle">@' + u.u + '</span></div>' +
+    '</div>' +
+    '<div class="pts"></div>';
+  row.addEventListener("click", () => {
+    if (!playing) window.open(PROFILE_BASE + encodeURIComponent(u.u), "_blank", "noopener");
+  });
+  race.appendChild(row);
+  u.el = row;
+  u.rankEl = row.querySelector(".rank");
+  u.barEl = row.querySelector(".bar");
+  u.ptsEl = row.querySelector(".pts");
+});
+
+const dateEl = document.getElementById("dateEl");
+const dayEl = document.getElementById("dayEl");
+const ticker = document.getElementById("ticker");
+const tickerText = document.getElementById("tickerText");
+const tickerDate = document.getElementById("tickerDate");
+const scrub = document.getElementById("scrub");
+const playBtn = document.getElementById("playBtn");
+
+let t = 0;
+let playing = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const seek = location.hash.match(/day=(\d+(?:\.\d+)?)/);
+if (seek) { t = Math.min(DAYS - 1, parseFloat(seek[1])); playing = false; }
+let speed = 1;               // multiplier
+const BASE_DPS = 4;          // days per second at 1x  (~36s full run)
+let lastFrame = null;
+let flashUntil = 0;
+
+function setPlaying(p) {
+  playing = p;
+  playBtn.innerHTML = p ? "&#9616;&#9616;" : "&#9654;";
+  document.body.classList.toggle("paused", !p);
+}
+setPlaying(playing);
+
+playBtn.addEventListener("click", () => {
+  if (!playing && t >= DAYS - 1) t = 0;   // replay from the start
+  setPlaying(!playing);
+});
+scrub.addEventListener("input", () => { t = parseFloat(scrub.value); setPlaying(false); render(0); });
+document.getElementById("speeds").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  speed = parseFloat(b.dataset.s);
+  document.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("on", x === b));
+});
+document.addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); playBtn.click(); }
+  if (e.code === "ArrowRight") { t = Math.min(DAYS - 1, t + 1); setPlaying(false); render(0); }
+  if (e.code === "ArrowLeft")  { t = Math.max(0, t - 1); setPlaying(false); render(0); }
+});
+
+function render(dt) {
+  const prevT = t;
+
+  // clock
+  dateEl.textContent = dayLabel(t) + " 2026";
+  dayEl.textContent = "DAY " + Math.floor(t) + " / " + (DAYS - 1);
+  scrub.value = t;
+
+  // standings at time t
+  const standings = USERS
+    .map(u => ({ u, v: valueAt(u, t) }))
+    .sort((a, b) => b.v - a.v || a.u.u.localeCompare(b.u.u));
+
+  const maxV = Math.max(standings[0].v, 1);
+  const rowH = ROW_H();
+  const ease = dt > 0 ? Math.min(1, dt * 7) : 1;
+
+  standings.forEach((s, rank) => {
+    const u = s.u;
+    const visible = rank < VISIBLE && s.v > 0;
+    const targetY = Math.min(rank, VISIBLE) * rowH;
+    if (u.smoothY === null) u.smoothY = targetY;
+    u.smoothY += (targetY - u.smoothY) * ease;
+
+    u.el.style.transform = "translateY(" + u.smoothY.toFixed(1) + "px)";
+    u.el.style.opacity = visible ? "1" : "0";
+    u.el.style.zIndex = visible ? String(VISIBLE - rank + 10) : "0";
+    u.el.classList.toggle("leader", rank === 0 && s.v > 0);
+    if (!visible) return;
+
+    u.rankEl.textContent = rank + 1;
+    u.barEl.style.width = Math.max(0.6, (s.v / maxV) * 100) + "%";
+    u.ptsEl.textContent = fmt(s.v);
+  });
+
+  // event ticker
+  const evt = [...EVENTS].reverse().find(e => t >= e.d && t - e.d < 5);
+  if (evt) {
+    tickerText.textContent = evt.text;
+    tickerDate.textContent = dayLabel(evt.d).toLowerCase();
+    ticker.classList.add("show");
+  } else {
+    ticker.classList.remove("show");
+  }
+
+  // gold flash when the achievement wave lands
+  if (Math.floor(prevT - dt * BASE_DPS * speed) < 69 && Math.floor(prevT) >= 69) {
+    flashUntil = performance.now() + 1400;
+  }
+  dateEl.classList.toggle("flash", performance.now() < flashUntil);
+}
+
+function loop(ts) {
+  if (lastFrame === null) lastFrame = ts;
+  const dt = Math.min(0.1, (ts - lastFrame) / 1000);
+  lastFrame = ts;
+  if (playing) {
+    t += dt * BASE_DPS * speed;
+    if (t >= DAYS - 1) { t = DAYS - 1; setPlaying(false); }
+  }
+  render(dt);
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

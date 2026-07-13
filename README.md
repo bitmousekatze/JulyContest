@@ -90,6 +90,7 @@ Three.js loads from CDN, so you need an internet connection.
 | `game.js` | Three.js scene, simulation, AI, and effects |
 | `roster.js` | The community roster — **edit this** to add/remove captains |
 | `BattleSong.mp3` | Battle music (non-copyrighted) — loops during the arena, 🔊 mutes |
+| `timelapse.html` | **[📈 The Story So Far](https://bitmousekatze.github.io/JulyContest/timelapse.html)** — a bar-chart-race replay of the real Builder Points leaderboard (Feb 20 → Jul 12, 2026), the same climb that seeded this roster |
 
 ## Editing the roster
 

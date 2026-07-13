@@ -274,12 +274,12 @@
   #memorial-tip .tt-row { display: flex; justify-content: space-between; gap: 16px; }
   #memorial-tip .tt-row span:last-child { color: var(--parchment); }
 
-  #prompted-link {
+  #prompted-link, .port-link {
     display: inline-block; margin-top: 14px; font-size: 13px; color: #7d8ea3;
     text-decoration: none; border: 1px solid #2e3f56; border-radius: 16px;
     padding: 4px 14px; letter-spacing: 1px;
   }
-  #prompted-link:hover { color: var(--gold); border-color: var(--gold-dim); }
+  #prompted-link:hover, .port-link:hover { color: var(--gold); border-color: var(--gold-dim); }
 
   @media (max-width: 640px) {
     .mem-board { grid-template-columns: repeat(6, 1fr); }
@@ -318,6 +318,7 @@
     <h1>⚓ BROADSIDE ROYALE ⚓</h1>
     <div class="sub">A pirate-age battle arena upon the high seas of Prompted</div>
     <div class="contest-tag">July Games Contest · 24 sail in · 1 sails out</div>
+    <div><a class="port-link" href="timelapse.html">📈 how these captains earned their stripes — leaderboard timelapse</a></div>
   </div>
   <div id="mode-toggle">
     <button class="mode-btn sel" id="mode-fair">⚖️ FAIR SEAS<span>even ships for all — pure seamanship</span></button>
@@ -399,6 +400,7 @@
       <button class="btn ghost" id="btn-port-pause">🏠 Back to Port</button>
     </div>
     <a id="prompted-link" href="https://prmpted.com" target="_blank" rel="noopener">⚡ prmpted.com</a>
+    <a class="port-link" href="timelapse.html">📈 leaderboard timelapse</a>
   </div>
 </div>
 
